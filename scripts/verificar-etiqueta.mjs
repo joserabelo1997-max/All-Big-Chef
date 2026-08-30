@@ -21,7 +21,7 @@ const SAIDA = process.argv[2] ?? '/tmp/etiqueta.png'
 const CHROMIUM = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'
 
 const servidor = await createServer({
-  root: import.meta.dirname,
+  root: new URL('..', import.meta.url).pathname,
   server: { port: 5199 },
   logLevel: 'error',
 })

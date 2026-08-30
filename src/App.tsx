@@ -3,6 +3,8 @@ import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { Layout } from './ui/Layout'
 import { Painel } from './screens/Painel'
 import { EmBreve } from './screens/EmBreve'
+import { DiagnosticoImpressora } from './screens/DiagnosticoImpressora'
+import { Configuracoes } from './screens/Configuracoes'
 
 /**
  * HashRouter — e não BrowserRouter — porque o GitHub Pages serve arquivos
@@ -25,11 +27,11 @@ export function App() {
           <Route path="l/:labelId" element={<EmBreve titulo="Etiqueta" />} />
           <Route path="editor" element={<EmBreve titulo="Editor de etiqueta" />} />
           <Route path="relatorios" element={<EmBreve titulo="Relatórios" />} />
-          <Route path="config" element={<EmBreve titulo="Configurações" />} />
-          <Route
-            path="config/impressora"
-            element={<EmBreve titulo="Diagnóstico da impressora" />}
-          />
+          <Route path="config" element={<Configuracoes />} />
+          <Route path="config/impressora" element={<DiagnosticoImpressora />} />
+          <Route path="config/alertas" element={<EmBreve titulo="Alertas de validade" />} />
+          <Route path="config/equipe" element={<EmBreve titulo="Equipe" />} />
+          <Route path="config/fornecedores" element={<EmBreve titulo="Fornecedores" />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
