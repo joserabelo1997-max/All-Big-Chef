@@ -10,9 +10,13 @@ const CHROMIUM = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'
 
 const ROTAS = [
   ['painel', '#/'],
+  ['pastas', '#/pastas'],
+  ['produtos', '#/produtos'],
+  ['produto-novo', '#/produtos/novo'],
+  ['equipe', '#/config/equipe'],
+  ['fornecedores', '#/config/fornecedores'],
   ['configuracoes', '#/config'],
   ['impressora', '#/config/impressora'],
-  ['pastas', '#/pastas'],
 ]
 
 mkdirSync(SAIDA, { recursive: true })

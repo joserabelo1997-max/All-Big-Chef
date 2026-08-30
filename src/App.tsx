@@ -1,10 +1,15 @@
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 
 import { Layout } from './ui/Layout'
-import { Painel } from './screens/Painel'
-import { EmBreve } from './screens/EmBreve'
-import { DiagnosticoImpressora } from './screens/DiagnosticoImpressora'
 import { Configuracoes } from './screens/Configuracoes'
+import { DiagnosticoImpressora } from './screens/DiagnosticoImpressora'
+import { EmBreve } from './screens/EmBreve'
+import { Equipe } from './screens/Equipe'
+import { Fornecedores } from './screens/Fornecedores'
+import { Painel } from './screens/Painel'
+import { Pastas } from './screens/Pastas'
+import { ProdutoForm } from './screens/ProdutoForm'
+import { Produtos } from './screens/Produtos'
 
 /**
  * HashRouter — e não BrowserRouter — porque o GitHub Pages serve arquivos
@@ -17,21 +22,29 @@ export function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<Painel />} />
-          <Route path="pastas" element={<EmBreve titulo="Pastas" />} />
-          <Route path="produtos" element={<EmBreve titulo="Produtos" />} />
+
+          <Route path="pastas" element={<Pastas />} />
+          <Route path="produtos" element={<Produtos />} />
+          {/* `novo` antes de `:produtoId` para não ser capturado como um id. */}
+          <Route path="produtos/novo" element={<ProdutoForm />} />
+          <Route path="produtos/:produtoId" element={<ProdutoForm />} />
+
           <Route path="imprimir" element={<EmBreve titulo="Imprimir etiqueta" />} />
           <Route path="lote" element={<EmBreve titulo="Impressão em lote" />} />
           <Route path="etiquetas" element={<EmBreve titulo="Etiquetas ativas" />} />
           <Route path="baixa" element={<EmBreve titulo="Dar baixa" />} />
           {/* Destino do QR impresso: abre direto a etiqueta escaneada. */}
           <Route path="l/:labelId" element={<EmBreve titulo="Etiqueta" />} />
+
           <Route path="editor" element={<EmBreve titulo="Editor de etiqueta" />} />
           <Route path="relatorios" element={<EmBreve titulo="Relatórios" />} />
+
           <Route path="config" element={<Configuracoes />} />
           <Route path="config/impressora" element={<DiagnosticoImpressora />} />
           <Route path="config/alertas" element={<EmBreve titulo="Alertas de validade" />} />
-          <Route path="config/equipe" element={<EmBreve titulo="Equipe" />} />
-          <Route path="config/fornecedores" element={<EmBreve titulo="Fornecedores" />} />
+          <Route path="config/equipe" element={<Equipe />} />
+          <Route path="config/fornecedores" element={<Fornecedores />} />
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
