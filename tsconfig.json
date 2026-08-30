@@ -20,7 +20,12 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
 
-    "types": ["vite/client", "vite-plugin-pwa/client", "vitest/globals"],
+    "types": [
+      "vite/client",
+      "vite-plugin-pwa/client",
+      "vitest/globals",
+      "web-bluetooth"
+    ],
 
     "baseUrl": ".",
     "paths": {
