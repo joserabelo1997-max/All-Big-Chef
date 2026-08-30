@@ -1,5 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom'
 
+import { IndicadorSync } from './IndicadorSync'
+
 /** Navegação inferior: alcance do polegar com o aparelho na mão, sem menu escondido. */
 const ABAS = [
   { para: '/', rotulo: 'Painel', icone: '🏠', fim: true },
@@ -12,6 +14,8 @@ const ABAS = [
 export function Layout() {
   return (
     <div className="flex h-full flex-col">
+      <IndicadorSync />
+
       <main className="flex-1 overflow-y-auto pb-24">
         <Outlet />
       </main>
