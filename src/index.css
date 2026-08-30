@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-slate-100 text-slate-900 antialiased;
+    /* Respeita o notch/barra inferior quando instalado como PWA. */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right)
+      env(safe-area-inset-bottom) env(safe-area-inset-left);
+    /* Bancada de cozinha: evita seleção acidental de texto ao tocar. */
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  input,
+  textarea {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+}
+
+@layer components {
+  /* Botão de ação principal, dimensionado para toque com luva. */
+  .btn {
+    @apply inline-flex min-h-toque items-center justify-center gap-2 rounded-xl
+      px-5 text-base font-semibold transition active:scale-[0.98]
+      disabled:pointer-events-none disabled:opacity-40;
+  }
+
+  .btn-primario {
+    @apply btn bg-slate-900 text-white hover:bg-slate-800;
+  }
+
+  .btn-secundario {
+    @apply btn border-2 border-slate-300 bg-white text-slate-800 hover:bg-slate-50;
+  }
+
+  .btn-perigo {
+    @apply btn bg-validade-vencido text-white hover:brightness-110;
+  }
+
+  .campo {
+    @apply min-h-toque w-full rounded-xl border-2 border-slate-300 bg-white px-4
+      text-base outline-none focus:border-slate-900;
+  }
+
+  .rotulo {
+    @apply mb-1.5 block text-sm font-semibold text-slate-600;
+  }
+
+  .cartao {
+    @apply rounded-2xl border border-slate-200 bg-white shadow-sm;
+  }
+}
