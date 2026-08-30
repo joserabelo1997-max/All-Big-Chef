@@ -7,8 +7,10 @@ import { DarBaixa } from './screens/DarBaixa'
 import { EmBreve } from './screens/EmBreve'
 import { Equipe } from './screens/Equipe'
 import { EtiquetaDetalhe } from './screens/EtiquetaDetalhe'
+import { Etiquetas } from './screens/Etiquetas'
 import { Fornecedores } from './screens/Fornecedores'
 import { Imprimir } from './screens/Imprimir'
+import { Lote } from './screens/Lote'
 import { Painel } from './screens/Painel'
 import { Pastas } from './screens/Pastas'
 import { ProdutoForm } from './screens/ProdutoForm'
@@ -33,8 +35,8 @@ export function App() {
           <Route path="produtos/:produtoId" element={<ProdutoForm />} />
 
           <Route path="imprimir" element={<Imprimir />} />
-          <Route path="lote" element={<EmBreve titulo="Impressão em lote" />} />
-          <Route path="etiquetas" element={<EmBreve titulo="Etiquetas ativas" />} />
+          <Route path="lote" element={<Lote />} />
+          <Route path="etiquetas" element={<Etiquetas />} />
           <Route path="baixa" element={<DarBaixa />} />
           {/* Destino do QR impresso: abre direto a etiqueta escaneada. */}
           <Route path="l/:labelId" element={<EtiquetaDetalhe />} />
