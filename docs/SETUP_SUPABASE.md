@@ -100,6 +100,88 @@ select o.nome as restaurante, count(f.id) as pastas
 
 Deve aparecer seu restaurante com 9 pastas. Se apareceu, o banco está pronto.
 
+## 7. Notificações de validade (opcional, mas recomendado)
+
+Sem esta etapa os alertas aparecem dentro do app, com contadores e cores. Com
+ela, o aviso chega no celular **mesmo com o app fechado**.
+
+Quem dispara a notificação é uma função hospedada no Supabase, não o site — é
+por isso que o app poder viver no GitHub Pages, que não roda servidor, não
+atrapalha em nada.
+
+### 7.1 Gerar o par de chaves VAPID
+
+No seu computador, com Node instalado:
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+Saem duas chaves. A **pública** vai no `.env` do app (`VITE_VAPID_PUBLIC_KEY`)
+e a **privada** só nos secrets do Supabase — nunca no `.env`, nunca no
+repositório.
+
+### 7.2 Publicar a função
+
+Instale a CLI do Supabase e rode, na raiz do projeto:
+
+```bash
+npx supabase login
+npx supabase link --project-ref SEU-PROJECT-REF
+npx supabase secrets set \
+  VAPID_PUBLIC_KEY="a-chave-publica" \
+  VAPID_PRIVATE_KEY="a-chave-privada" \
+  VAPID_SUBJECT="mailto:seu@email.com"
+npx supabase functions deploy check-expiries
+```
+
+O *project ref* é o código na URL do painel:
+`https://supabase.com/dashboard/project/SEU-PROJECT-REF`.
+
+### 7.3 Agendar o envio diário
+
+Abra `supabase/migrations/0003_agendamento_push.sql`, troque os **dois valores
+marcados** (a URL da função e a `service_role` key, que fica em Project Settings
+→ API), e rode o arquivo no SQL Editor.
+
+> A `service_role` key ignora o RLS. Ela vive só no banco e nos secrets da
+> função — nunca no `.env` nem em qualquer arquivo versionado.
+
+O horário padrão é 08:00 de Brasília. Para mudar, ajuste o cron na migration
+(ele é escrito em UTC: 11:00 UTC = 08:00 em Brasília).
+
+### 7.4 Ativar em cada aparelho
+
+No app, vá em **Ajustes → Alertas de validade** e toque em *Ativar avisos neste
+aparelho*. Cada aparelho é ativado separadamente.
+
+**No iPhone há um requisito extra:** os avisos só funcionam com o app instalado
+na tela de início. Abra o endereço no **Safari**, toque em Compartilhar e
+escolha *Adicionar à Tela de Início*. Aberto como aba comum, ou instalado por
+outro navegador, o iOS não entrega notificação.
+
+Isso convive bem com a impressão: **Safari instala o app e recebe os alertas;
+Bluefy imprime.**
+
+### Testar sem esperar o horário
+
+No SQL Editor:
+
+```sql
+select net.http_post(
+  url := (select valor from public.configuracao_interna where chave = 'url_funcao'),
+  headers := jsonb_build_object(
+    'Content-Type', 'application/json',
+    'Authorization',
+    'Bearer ' || (select valor from public.configuracao_interna where chave = 'service_key')
+  ),
+  body := '{}'::jsonb
+);
+```
+
+Se houver etiqueta vencendo e o aparelho estiver ativado, a notificação chega em
+segundos.
+
 ## Estrutura criada
 
 | Tabela | Guarda |

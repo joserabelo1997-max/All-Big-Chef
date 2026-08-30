@@ -1,5 +1,3 @@
-import { BrowserQRCodeReader, type IScannerControls } from '@zxing/browser'
-
 /**
  * Leitura de QR Code pela câmera.
  *
@@ -10,6 +8,11 @@ import { BrowserQRCodeReader, type IScannerControls } from '@zxing/browser'
  * O fallback não é detalhe: o Safari e o Bluefy, no iPhone, não têm
  * `BarcodeDetector`. Sem o ZXing, dar baixa por QR simplesmente não
  * funcionaria em nenhum iPhone.
+ *
+ * O ZXing é carregado sob demanda, e não no topo do módulo. São ~250 KB de
+ * JavaScript que o Chrome no Android nunca precisa baixar, já que ali o
+ * decodificador nativo dá conta — e numa cozinha com Wi-Fi ruim, cada
+ * quilobyte do primeiro carregamento conta.
  */
 
 export interface ControleLeitura {
@@ -84,8 +87,9 @@ export async function iniciarLeitura(
     }
   }
 
+  const { BrowserQRCodeReader } = await import('@zxing/browser')
   const leitor = new BrowserQRCodeReader()
-  let controles: IScannerControls | null = null
+  let controles: Awaited<ReturnType<typeof leitor.decodeFromConstraints>> | null = null
 
   controles = await leitor.decodeFromConstraints(
     { video: { facingMode: 'environment' } },

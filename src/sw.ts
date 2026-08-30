@@ -29,6 +29,37 @@ cleanupOutdatedCaches()
 self.skipWaiting()
 clientsClaim()
 
+/**
+ * Cache sob demanda do leitor de QR.
+ *
+ * Esse pedaço fica fora do precache porque são ~410 KB que o Chrome no Android
+ * nunca usa — lá o QR é lido pela BarcodeDetector nativa. Mas quem depende dele
+ * (Safari e Bluefy, no iPhone) precisa conseguir dar baixa offline, então na
+ * primeira vez que for buscado ele é guardado.
+ *
+ * Cache-first sem revalidação é seguro aqui: o nome do arquivo carrega o hash
+ * do conteúdo, então uma versão nova sempre vem com outra URL.
+ */
+const CACHE_SOB_DEMANDA = 'abc-sob-demanda-v1'
+
+self.addEventListener('fetch', (evento) => {
+  const url = new URL(evento.request.url)
+  if (evento.request.method !== 'GET') return
+  if (!/\/assets\/leitor-qr-[^/]+\.js$/.test(url.pathname)) return
+
+  evento.respondWith(
+    (async () => {
+      const cache = await caches.open(CACHE_SOB_DEMANDA)
+      const guardado = await cache.match(evento.request)
+      if (guardado) return guardado
+
+      const resposta = await fetch(evento.request)
+      if (resposta.ok) await cache.put(evento.request, resposta.clone())
+      return resposta
+    })(),
+  )
+})
+
 self.addEventListener('push', (evento) => {
   // Um push sem corpo legível ainda deve notificar: melhor um aviso genérico do
   // que um alerta de validade silenciosamente perdido.

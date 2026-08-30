@@ -25,6 +25,12 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       injectManifest: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // O ZXing são ~410 KB que mais da metade dos aparelhos nunca usa: no
+        // Chrome do Android o QR é lido pela BarcodeDetector nativa. Precachear
+        // isso obrigaria toda cozinha a baixá-lo no primeiro acesso, num Wi-Fi
+        // que costuma ser ruim. Fica de fora e é cacheado quando (e se) for
+        // buscado — a partir daí a leitura offline funciona normalmente.
+        globIgnores: ['**/leitor-qr-*.js'],
       },
       devOptions: {
         enabled: true,
@@ -58,6 +64,22 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        // Nome estável para o pedaço do ZXing, para que o `globIgnores` acima
+        // consiga excluí-lo do precache por padrão de nome.
+        manualChunks(id) {
+          if (id.includes('@zxing')) return 'leitor-qr'
+          return undefined
+        },
+        chunkFileNames: (info) =>
+          info.name === 'leitor-qr'
+            ? 'assets/leitor-qr-[hash].js'
+            : 'assets/[name]-[hash].js',
+      },
     },
   },
 }))
