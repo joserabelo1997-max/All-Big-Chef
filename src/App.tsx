@@ -1,4 +1,5 @@
-import { lazy, Suspense } from 'react'
+import { Suspense } from 'react'
+import { lazy } from 'react'
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 
 import { Layout } from './ui/Layout'
@@ -35,11 +36,7 @@ const Lote = tela(() => import('./screens/Lote'), 'Lote')
 const Pastas = tela(() => import('./screens/Pastas'), 'Pastas')
 const ProdutoForm = tela(() => import('./screens/ProdutoForm'), 'ProdutoForm')
 const Produtos = tela(() => import('./screens/Produtos'), 'Produtos')
-
-const EmBreve = lazy(async () => {
-  const m = await import('./screens/EmBreve')
-  return { default: m.EmBreve }
-})
+const Relatorios = tela(() => import('./screens/Relatorios'), 'Relatorios')
 
 /**
  * HashRouter — e não BrowserRouter — porque o GitHub Pages serve arquivos
@@ -67,7 +64,7 @@ export function App() {
           <Route path="l/:labelId" element={<Lazy><EtiquetaDetalhe /></Lazy>} />
 
           <Route path="editor" element={<Lazy><EditorEtiqueta /></Lazy>} />
-          <Route path="relatorios" element={<Lazy><EmBreve titulo="Relatórios" /></Lazy>} />
+          <Route path="relatorios" element={<Lazy><Relatorios /></Lazy>} />
 
           <Route path="config" element={<Lazy><Configuracoes /></Lazy>} />
           <Route path="config/impressora" element={<Lazy><DiagnosticoImpressora /></Lazy>} />

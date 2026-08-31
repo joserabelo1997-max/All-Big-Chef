@@ -83,8 +83,12 @@ conferir(
   etiqueta.codigo,
 )
 
+// Comparação por DIA DE CALENDÁRIO, não por diferença de timestamps: a validade
+// termina às 23:59 do dia alvo, então rodando de madrugada a subtração daria
+// 5,99 dias e arredondaria para 6. É exatamente o erro que o domínio evita.
+const soData = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
 const diasAteVencer = Math.round(
-  (new Date(etiqueta.vence) - new Date()) / 86_400_000,
+  (soData(new Date(etiqueta.vence)) - soData(new Date())) / 86_400_000,
 )
 conferir('validade caiu 5 dias à frente', diasAteVencer === 5, `${diasAteVencer} dias`)
 

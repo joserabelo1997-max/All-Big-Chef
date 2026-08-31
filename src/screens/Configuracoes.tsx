@@ -11,6 +11,24 @@ const ITENS = [
     descricao: 'Parear a etiquetadora e testar a impressão',
   },
   {
+    para: '/editor',
+    icone: '🏷️',
+    titulo: 'Modelo da etiqueta',
+    descricao: 'Escolher o que sai impresso e onde',
+  },
+  {
+    para: '/relatorios',
+    icone: '📊',
+    titulo: 'Relatórios',
+    descricao: 'Desperdício, aproveitamento e exportação',
+  },
+  {
+    para: '/lote',
+    icone: '📚',
+    titulo: 'Impressão em lote',
+    descricao: 'Uma fila de etiquetas para o pré-preparo',
+  },
+  {
     para: '/config/alertas',
     icone: '🔔',
     titulo: 'Alertas de validade',
