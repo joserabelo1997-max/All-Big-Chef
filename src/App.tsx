@@ -21,6 +21,7 @@ const tela = <T extends string>(
 ) => lazy(async () => ({ default: (await carregar())[nome] }))
 
 const Alertas = tela(() => import('./screens/Alertas'), 'Alertas')
+const Conta = tela(() => import('./screens/Conta'), 'Conta')
 const Configuracoes = tela(() => import('./screens/Configuracoes'), 'Configuracoes')
 const EscanearQr = tela(() => import('./screens/EscanearQr'), 'EscanearQr')
 const EditorEtiqueta = tela(() => import('./screens/EditorEtiqueta'), 'EditorEtiqueta')
@@ -100,6 +101,7 @@ export function App() {
 
           <Route path="config" element={<Lazy><Configuracoes /></Lazy>} />
           <Route path="config/impressora" element={<Lazy><DiagnosticoImpressora /></Lazy>} />
+          <Route path="config/conta" element={<Lazy><Conta /></Lazy>} />
           <Route path="config/alertas" element={<Lazy><Alertas /></Lazy>} />
           <Route path="config/equipe" element={<Lazy><Equipe /></Lazy>} />
           <Route path="config/fornecedores" element={<Lazy><Fornecedores /></Lazy>} />

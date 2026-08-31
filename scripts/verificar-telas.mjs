@@ -19,6 +19,7 @@ const ROTAS = [
   ['requisicoes', '#/estoque/requisicoes'],
   ['contagem', '#/estoque/contagem'],
   ['repor', '#/estoque/repor'],
+  ['conta', '#/config/conta'],
   ['alertas', '#/config/alertas'],
   ['equipe', '#/config/equipe'],
   ['fornecedores', '#/config/fornecedores'],
