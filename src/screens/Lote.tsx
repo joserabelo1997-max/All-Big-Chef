@@ -15,7 +15,7 @@ import {
   type PerfilImpressora,
 } from '../printing/printerProfile'
 import { MODELO_PADRAO, type ModeloEtiqueta } from '../printing/template'
-import { escolherImpressora, motivoIndisponivel } from '../printing/transport/ble'
+import { abrirConexao, foiCancelado, motivoNaoPodeImprimir } from '../printing/conectar'
 import { SeletorMembro } from '../ui/SeletorMembro'
 
 /**
@@ -55,7 +55,7 @@ export function Lote() {
 
   const perfil = lerPerfilLocal()
   const impressoraPronta = perfilEstaCompleto(perfil)
-  const bluetoothIndisponivel = motivoIndisponivel()
+  const bluetoothIndisponivel = motivoNaoPodeImprimir(perfil)
 
   const produtos = useLiveQuery(
     async () => {
@@ -108,7 +108,7 @@ export function Lote() {
     let impressas = 0
 
     try {
-      const aparelho = await escolherImpressora()
+      const aberta = await abrirConexao(perfil as PerfilImpressora)
 
       for (const item of fila) {
         const fornecedor = item.produto.supplier_id
@@ -137,7 +137,7 @@ export function Lote() {
           )
 
           await imprimir(
-            aparelho,
+            aberta,
             modelo,
             dadosParaImpressao(etiqueta),
             perfil as PerfilImpressora,
@@ -149,7 +149,7 @@ export function Lote() {
       setSucesso(`${impressas} etiquetas impressas.`)
       setFila([])
     } catch (e) {
-      if (e instanceof Error && e.name === 'NotFoundError') {
+      if (foiCancelado(e)) {
         setErro(null)
       } else {
         setErro(

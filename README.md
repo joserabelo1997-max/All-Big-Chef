@@ -52,17 +52,22 @@ node scripts/verificar-relatorios.mjs # números do relatório e formato do CSV
 node scripts/verificar-telas.mjs      # captura todas as telas e reporta erros
 ```
 
-## Impressão Bluetooth: o que funciona onde
+## Impressão: o que funciona onde
 
-O app usa **Web Bluetooth**, que só fala BLE/GATT — nunca Bluetooth Clássico
-(SPP). Isso define onde dá para imprimir:
+O app fala com a impressora por **cabo USB** ou por **Bluetooth**, e você escolhe
+em Ajustes → Impressora. Ter as duas vias importa: cada uma cobre a lacuna da
+outra.
 
-| Plataforma | Navegador | Imprime? |
+| Plataforma | Cabo USB | Bluetooth |
 | --- | --- | --- |
-| Android | Chrome / Edge | ✅ |
-| Windows, macOS, ChromeOS | Chrome / Edge | ✅ |
-| iPhone / iPad | **Bluefy** (grátis na App Store) | ✅ |
-| iPhone / iPad | Safari | ❌ — o WebKit não implementa Web Bluetooth |
+| Android (Chrome/Edge) | ✅ com cabo OTG | ✅ |
+| Linux, ChromeOS | ✅ | ✅ |
+| Windows, macOS | ⚠️ o driver do sistema costuma travar o acesso | ✅ |
+| iPhone / iPad | ❌ não existe no iOS | ✅ pelo **Bluefy** |
+| iPhone / iPad (Safari) | ❌ | ❌ |
+
+Para uma impressora de bancada ligada na tomada, **o cabo costuma ser a melhor
+escolha**: manda a etiqueta em uma fração do tempo e não depende de pareamento.
 
 No iPhone o arranjo é: **Safari instala o app e recebe os alertas de validade;
 Bluefy imprime.** É o mesmo app nos dois, sem build separado.
@@ -70,8 +75,12 @@ Bluefy imprime.** É o mesmo app nos dois, sem build separado.
 O restante do sistema — cadastro, painel de validades, leitura de QR, baixa de
 etiquetas, relatórios — funciona em qualquer navegador moderno, inclusive Safari.
 
-Web Bluetooth exige contexto seguro: `localhost` ou HTTPS. Abrir o `index.html`
+As duas APIs exigem contexto seguro: `localhost` ou HTTPS. Abrir o `index.html`
 direto do disco não funciona.
+
+> **Rolo de etiqueta:** o modelo padrão é desenhado para **60 × 40 mm**. Se sua
+> impressora veio com rolos de outro tamanho, compre um 60 × 40 (medida comum e
+> barata) ou ajuste o tamanho no diagnóstico e reposicione os campos no editor.
 
 ## Documentação
 

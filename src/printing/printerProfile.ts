@@ -11,6 +11,15 @@ import type { LinguagemImpressora } from './encoders'
 export interface PerfilImpressora {
   /** Nome anunciado pelo aparelho, só para exibir. */
   nome: string
+  /**
+   * Por onde falar com a impressora.
+   *
+   * A AIYIN de bancada aceita as duas vias. O USB é mais rápido e não depende
+   * de pareamento, mas exige cabo e não existe no iPhone; o Bluetooth alcança
+   * qualquer aparelho. Quem decide é a cozinha, no diagnóstico.
+   */
+  conexao: 'ble' | 'usb'
+  /** Usados apenas na conexão Bluetooth. */
   servicoUuid: string
   caracteristicaUuid: string
   linguagem: LinguagemImpressora
@@ -27,6 +36,7 @@ export interface PerfilImpressora {
 
 export const PERFIL_PADRAO: PerfilImpressora = {
   nome: '',
+  conexao: 'ble',
   servicoUuid: '',
   caracteristicaUuid: '',
   // TSPL primeiro porque domina as etiquetadoras de rolo, que são as que
@@ -70,6 +80,12 @@ export function salvarPerfilLocal(perfil: PerfilImpressora): void {
   }
 }
 
-export function perfilEstaCompleto(perfil: PerfilImpressora | null): perfil is PerfilImpressora {
-  return Boolean(perfil?.servicoUuid && perfil.caracteristicaUuid)
+export function perfilEstaCompleto(
+  perfil: PerfilImpressora | null,
+): perfil is PerfilImpressora {
+  if (!perfil) return false
+  // No USB não há UUID a guardar: o dispositivo é escolhido na hora, pelo
+  // seletor do navegador, e o endpoint é descoberto na conexão.
+  if (perfil.conexao === 'usb') return true
+  return Boolean(perfil.servicoUuid && perfil.caracteristicaUuid)
 }

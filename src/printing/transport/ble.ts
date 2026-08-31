@@ -192,20 +192,15 @@ export function ranquearCandidatos(
   }
 }
 
-export interface OpcoesEnvio {
-  /**
-   * Bytes por escrita. O MTU negociado não é exposto pela Web Bluetooth, então
-   * usamos um valor conservador: 182 cabe no MTU mínimo estendido da maioria
-   * das impressoras. Pedaços maiores travam firmwares mais simples no meio da
-   * etiqueta, deixando meia impressão no papel.
-   */
-  tamanhoPedaco?: number
-  /** Pausa entre escritas, em ms. Dá tempo do buffer da impressora escoar. */
-  pausaMs?: number
-  aoProgredir?: (enviados: number, total: number) => void
-}
+/**
+ * Sobre `tamanhoPedaco` no BLE: o MTU negociado não é exposto pela Web
+ * Bluetooth, então o padrão é conservador (182 bytes), que cabe no MTU mínimo
+ * estendido da maioria das impressoras. Pedaços maiores travam firmwares
+ * simples no meio da etiqueta, deixando meia impressão no papel.
+ */
+export type { OpcoesEnvio } from './tipos'
 
-const espera = (ms: number) => new Promise((r) => setTimeout(r, ms))
+import { espera, type Conexao, type OpcoesEnvio } from './tipos'
 
 /**
  * Envia os bytes em pedaços.
@@ -253,4 +248,27 @@ export async function obterCaracteristica(
 ): Promise<BluetoothRemoteGATTCharacteristic> {
   const servico = await server.getPrimaryService(servicoUuid)
   return servico.getCharacteristic(caracteristicaUuid)
+}
+
+/** Empacota o dispositivo BLE na interface comum de transporte. */
+export async function conectarBle(
+  device: BluetoothDevice,
+  servicoUuid: string,
+  caracteristicaUuid: string,
+): Promise<Conexao> {
+  const { server } = await conectar(device)
+  const caracteristica = await obterCaracteristica(
+    server,
+    servicoUuid,
+    caracteristicaUuid,
+  )
+
+  return {
+    tipo: 'ble',
+    nome: device.name ?? 'Etiquetadora Bluetooth',
+    enviar: (dados, opcoes) => enviar(caracteristica, dados, opcoes),
+    async desconectar() {
+      device.gatt?.disconnect()
+    },
+  }
 }

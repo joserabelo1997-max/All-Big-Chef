@@ -13,14 +13,17 @@ import {
   type PerfilImpressora,
 } from '../printing/printerProfile'
 import { MODELO_PADRAO, type DadosEtiqueta } from '../printing/template'
+import { foiCancelado, motivoNaoPodeImprimir } from '../printing/conectar'
 import {
   conectar,
+  conectarBle,
   escolherImpressora,
   inspecionar,
-  motivoIndisponivel,
   ranquearCandidatos,
   type CaracteristicaEncontrada,
 } from '../printing/transport/ble'
+import type { Conexao } from '../printing/transport/tipos'
+import { conectarUsb, escolherImpressoraUsb } from '../printing/transport/usb'
 import { PreviaEtiqueta } from '../ui/PreviaEtiqueta'
 
 /**
@@ -62,24 +65,40 @@ function emDias(dias: number): string {
 type Etapa = 'inicio' | 'inspecionando' | 'escolhendo' | 'testando'
 
 export function DiagnosticoImpressora() {
-  const indisponivel = motivoIndisponivel()
-
   const [perfil, setPerfil] = useState<PerfilImpressora>(
     () => lerPerfilLocal() ?? PERFIL_PADRAO,
   )
-  const [device, setDevice] = useState<BluetoothDevice | null>(null)
+  const indisponivel = motivoNaoPodeImprimir(perfil)
+
+  const [conexao, setConexao] = useState<Conexao | null>(null)
   const [candidatos, setCandidatos] = useState<CaracteristicaEncontrada[]>([])
   const [etapa, setEtapa] = useState<Etapa>('inicio')
   const [erro, setErro] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
   const [progresso, setProgresso] = useState<string | null>(null)
 
+  /** USB não precisa de descoberta: o endpoint é achado na própria conexão. */
+  async function conectarPorUsb() {
+    setErro(null)
+    setAviso(null)
+    try {
+      const device = await escolherImpressoraUsb()
+      const aberta = await conectarUsb(device)
+      setConexao(aberta)
+      setPerfil((p) => ({ ...p, nome: aberta.nome }))
+      setCandidatos([])
+      setEtapa('escolhendo')
+    } catch (e) {
+      if (foiCancelado(e)) return
+      setErro(e instanceof Error ? e.message : 'Falha ao conectar por USB.')
+    }
+  }
+
   async function parear() {
     setErro(null)
     setAviso(null)
     try {
       const aparelho = await escolherImpressora()
-      setDevice(aparelho)
       setEtapa('inspecionando')
 
       const { server } = await conectar(aparelho)
@@ -106,9 +125,12 @@ export function DiagnosticoImpressora() {
         servicoUuid: melhor.servicoUuid,
         caracteristicaUuid: melhor.caracteristicaUuid,
       }))
+      setConexao(
+        await conectarBle(aparelho, melhor.servicoUuid, melhor.caracteristicaUuid),
+      )
     } catch (e) {
       // Cancelar o seletor não é erro — é a pessoa desistindo.
-      if (e instanceof Error && e.name === 'NotFoundError') {
+      if (foiCancelado(e)) {
         setEtapa('inicio')
         return
       }
@@ -118,13 +140,13 @@ export function DiagnosticoImpressora() {
   }
 
   async function testar() {
-    if (!device) return
+    if (!conexao) return
     setErro(null)
     setAviso(null)
     setEtapa('testando')
 
     try {
-      await imprimir(device, MODELO_PADRAO, DADOS_TESTE, perfil, {
+      await imprimir(conexao, MODELO_PADRAO, DADOS_TESTE, perfil, {
         aoProgredir: (p) => {
           if (p.etapa === 'enviando' && p.total) {
             setProgresso(`Enviando… ${Math.round((p.enviados! / p.total) * 100)}%`)
@@ -153,17 +175,6 @@ export function DiagnosticoImpressora() {
     setAviso('Perfil salvo neste aparelho.')
   }
 
-  if (indisponivel) {
-    return (
-      <div className="mx-auto max-w-2xl px-4 py-6">
-        <h1 className="mb-4 text-2xl font-bold">Impressora</h1>
-        <div className="cartao border-amber-300 bg-amber-50 p-4">
-          <p className="text-amber-900">{indisponivel}</p>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
       <h1 className="text-2xl font-bold">Diagnóstico da impressora</h1>
@@ -185,18 +196,77 @@ export function DiagnosticoImpressora() {
 
       <section className="mt-6">
         <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-slate-500">
-          1. Parear
+          1. Como conectar
         </h2>
-        <button className="btn-primario w-full" onClick={parear}>
-          {device ? `Reconectar (${device.name ?? 'sem nome'})` : 'Procurar etiquetadora'}
-        </button>
+
+        <div className="mb-3 grid grid-cols-2 gap-2">
+          <button
+            onClick={() => setPerfil((p) => ({ ...p, conexao: 'usb' }))}
+            className={[
+              'min-h-toque rounded-xl border-2 px-3 text-sm font-semibold transition',
+              perfil.conexao === 'usb'
+                ? 'border-slate-900 bg-slate-900 text-white'
+                : 'border-slate-200 bg-white',
+            ].join(' ')}
+          >
+            🔌 Cabo USB
+          </button>
+          <button
+            onClick={() => setPerfil((p) => ({ ...p, conexao: 'ble' }))}
+            className={[
+              'min-h-toque rounded-xl border-2 px-3 text-sm font-semibold transition',
+              perfil.conexao === 'ble'
+                ? 'border-slate-900 bg-slate-900 text-white'
+                : 'border-slate-200 bg-white',
+            ].join(' ')}
+          >
+            📶 Bluetooth
+          </button>
+        </div>
+
+        <p className="mb-3 text-xs text-slate-500">
+          {perfil.conexao === 'usb'
+            ? 'Mais rápido e sem pareamento — boa escolha para a impressora ' +
+              'parada na bancada. Funciona no Android com cabo OTG, no Linux e ' +
+              'no ChromeOS. No Windows e no Mac o sistema costuma travar o ' +
+              'acesso, e no iPhone não existe.'
+            : 'Funciona em qualquer aparelho, inclusive no iPhone (pelo ' +
+              'navegador Bluefy). Mais lento que o cabo e precisa de pareamento.'}
+        </p>
+
+        {/* O aviso fica DENTRO desta seção, e não no lugar da tela inteira: se
+            ocupasse a tela, quem está num navegador sem Bluetooth não veria os
+            botões acima e não teria como trocar para USB — ficaria preso. */}
+        {indisponivel ? (
+          <div className="cartao border-amber-300 bg-amber-50 p-4">
+            <p className="text-sm text-amber-900">{indisponivel}</p>
+            <p className="mt-2 text-sm text-amber-800">
+              Você ainda pode escolher a outra forma de conexão nos botões acima.
+            </p>
+          </div>
+        ) : (
+          <button
+            className="btn-primario w-full"
+            onClick={() => void (perfil.conexao === 'usb' ? conectarPorUsb() : parear())}
+          >
+            {conexao
+              ? `Reconectar (${conexao.nome})`
+              : perfil.conexao === 'usb'
+                ? 'Procurar impressora no USB'
+                : 'Procurar etiquetadora'}
+          </button>
+        )}
+
         {etapa === 'inspecionando' && (
           <p className="mt-2 text-sm text-slate-500">Lendo os serviços do aparelho…</p>
         )}
       </section>
 
-      {candidatos.length > 0 && (
+      {conexao && (
         <>
+          {/* O canal de escrita só existe no Bluetooth: no USB o endpoint é
+              descoberto sozinho na conexão. */}
+          {candidatos.length > 0 && (
           <section className="mt-8">
             <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-slate-500">
               2. Canal de escrita
@@ -239,10 +309,11 @@ export function DiagnosticoImpressora() {
               })}
             </div>
           </section>
+          )}
 
           <section className="mt-8">
             <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-slate-500">
-              3. Linguagem e resolução
+              {candidatos.length > 0 ? '3.' : '2.'} Linguagem e resolução
             </h2>
 
             <label className="rotulo">Linguagem de comando</label>
@@ -335,7 +406,7 @@ export function DiagnosticoImpressora() {
 
           <section className="mt-8">
             <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-slate-500">
-              4. Testar
+              {candidatos.length > 0 ? '4.' : '3.'} Testar
             </h2>
 
             <PreviaEtiqueta
@@ -349,7 +420,7 @@ export function DiagnosticoImpressora() {
               <button
                 className="btn-primario"
                 onClick={testar}
-                disabled={etapa === 'testando' || !perfil.servicoUuid}
+                disabled={etapa === 'testando' || !conexao}
               >
                 {progresso ?? 'Imprimir etiqueta de teste'}
               </button>

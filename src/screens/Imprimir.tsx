@@ -15,7 +15,8 @@ import {
   type PerfilImpressora,
 } from '../printing/printerProfile'
 import { MODELO_PADRAO, type ModeloEtiqueta } from '../printing/template'
-import { escolherImpressora, motivoIndisponivel } from '../printing/transport/ble'
+import { abrirConexao, foiCancelado, motivoNaoPodeImprimir } from '../printing/conectar'
+import type { Conexao } from '../printing/transport/tipos'
 import { PreviaEtiqueta } from '../ui/PreviaEtiqueta'
 import { SeletorMembro } from '../ui/SeletorMembro'
 
@@ -44,7 +45,7 @@ export function Imprimir() {
 
   // Usa o modelo desenhado no editor; cai no embutido enquanto não houver um.
   const [modelo, setModelo] = useState<ModeloEtiqueta>(MODELO_PADRAO)
-  const [device, setDevice] = useState<BluetoothDevice | null>(null)
+  const [conexao, setConexao] = useState<Conexao | null>(null)
   const [ocupado, setOcupado] = useState(false)
   const [progresso, setProgresso] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
@@ -56,7 +57,7 @@ export function Imprimir() {
 
   const perfil = lerPerfilLocal()
   const impressoraPronta = perfilEstaCompleto(perfil)
-  const bluetoothIndisponivel = motivoIndisponivel()
+  const bluetoothIndisponivel = motivoNaoPodeImprimir(perfil)
 
   const produtos = useLiveQuery(
     async () => {
@@ -109,10 +110,12 @@ export function Imprimir() {
     setOcupado(true)
 
     try {
-      let aparelho = device
-      if (!aparelho) {
-        aparelho = await escolherImpressora()
-        setDevice(aparelho)
+      // Reaproveita a conexão já aberta: reabrir o seletor a cada impressão
+      // obrigaria a pessoa a escolher o aparelho de novo toda vez.
+      let aberta = conexao
+      if (!aberta) {
+        aberta = await abrirConexao(perfil as PerfilImpressora)
+        setConexao(aberta)
       }
 
       let impressas = 0
@@ -134,7 +137,7 @@ export function Imprimir() {
         await registrarEvento(evento)
 
         await imprimir(
-          aparelho,
+          aberta,
           modelo,
           dadosParaImpressao(etiqueta),
           perfil as PerfilImpressora,
@@ -154,9 +157,11 @@ export function Imprimir() {
         `${impressas} ${impressas === 1 ? 'etiqueta impressa' : 'etiquetas impressas'}.`,
       )
     } catch (e) {
-      if (e instanceof Error && e.name === 'NotFoundError') {
+      if (foiCancelado(e)) {
         setErro(null) // a pessoa fechou o seletor de aparelhos
       } else {
+        // A conexão pode ter caído; descartar força uma nova na próxima vez.
+        setConexao(null)
         setErro(
           (e instanceof Error ? e.message : 'Falha ao imprimir.') +
             ' As etiquetas já foram registradas — você pode reimprimir pela lista.',

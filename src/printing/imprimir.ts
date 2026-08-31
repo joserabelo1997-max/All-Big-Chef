@@ -3,15 +3,18 @@ import { paraMonocromatico } from './monochrome'
 import type { PerfilImpressora } from './printerProfile'
 import { renderizarEtiqueta } from './renderer'
 import type { DadosEtiqueta, ModeloEtiqueta } from './template'
-import { conectar, enviar, obterCaracteristica } from './transport/ble'
+import type { Conexao } from './transport/tipos'
 
 /**
- * Amarra o pipeline inteiro: modelo + dados → canvas → bitmap → bytes → BLE.
+ * Amarra o pipeline inteiro: modelo + dados → canvas → bitmap → bytes → impressora.
  *
  * Está separado das telas de propósito. A impressão em lote, o botão de teste do
  * diagnóstico e a impressão avulsa chamam exatamente o mesmo caminho, então um
  * ajuste de densidade ou de fatiamento vale para todos sem precisar lembrar de
  * três lugares.
+ *
+ * Recebe uma `Conexao`, e não um dispositivo Bluetooth: a AIYIN aceita tanto
+ * BLE quanto USB, e o pipeline não precisa saber por onde os bytes saem.
  */
 
 export interface ProgressoImpressao {
@@ -48,9 +51,9 @@ export async function gerarBytes(
   return { bytes, largura, altura }
 }
 
-/** Renderiza, codifica e envia para a impressora já pareada. */
+/** Renderiza, codifica e envia pela conexão já aberta. */
 export async function imprimir(
-  device: BluetoothDevice,
+  conexao: Conexao,
   modelo: ModeloEtiqueta,
   dados: DadosEtiqueta,
   perfil: PerfilImpressora,
@@ -61,18 +64,13 @@ export async function imprimir(
   aoProgredir?.({ etapa: 'renderizando' })
   const { bytes } = await gerarBytes(modelo, dados, perfil, copias)
 
-  aoProgredir?.({ etapa: 'conectando' })
-  const { server } = await conectar(device)
-  const caracteristica = await obterCaracteristica(
-    server,
-    perfil.servicoUuid,
-    perfil.caracteristicaUuid,
-  )
-
   aoProgredir?.({ etapa: 'enviando', enviados: 0, total: bytes.length })
-  await enviar(caracteristica, bytes, {
-    tamanhoPedaco: perfil.tamanhoPedaco,
-    pausaMs: perfil.pausaMs,
+  await conexao.enviar(bytes, {
+    // O USB aguenta blocos muito maiores; o perfil guarda o valor que serve ao
+    // BLE, então só o aplicamos nesse caso.
+    ...(conexao.tipo === 'ble'
+      ? { tamanhoPedaco: perfil.tamanhoPedaco, pausaMs: perfil.pausaMs }
+      : {}),
     aoProgredir: (enviados, total) =>
       aoProgredir?.({ etapa: 'enviando', enviados, total }),
   })
