@@ -210,3 +210,57 @@ está errado para o rolo. Ajuste *Espaçamento entre etiquetas* no Ajuste fino.
 
 **A etiqueta sai deslocada, invadindo a próxima** — geralmente é o rolo: confira
 se ele é mesmo 60 × 40 mm. Rolos de outro tamanho desalinham o sensor de gap.
+
+---
+
+# Leitor de código de barras (opcional)
+
+Um leitor Bluetooth acelera muito a baixa de etiquetas: aponta, aperta o
+gatilho, e a etiqueta abre. Numa conferência de geladeira com dezenas de potes,
+a diferença para a câmera do celular é grande.
+
+## Por que funciona sem configurar nada no app
+
+Leitores como o **Goldensky GS-CH6** são vistos pelo sistema como um **teclado**:
+ao escanear, "digitam" o conteúdo do código e dão Enter. O app apenas reconhece
+essa digitação — não há Bluetooth envolvido do nosso lado.
+
+Isso traz três vantagens:
+
+- **Funciona no iPhone.** Não passa por Web Bluetooth, então não depende do
+  beacio nem do Bluefy.
+- **Os três modos do aparelho servem**: Bluetooth, adaptador 2.4G e cabo USB são
+  todos modos de teclado. Use o que for mais conveniente.
+- **Nada para configurar no app.** Pareou no sistema, já funciona.
+
+## Como usar
+
+1. Pareie o leitor pelo Bluetooth do aparelho (ou espete o adaptador 2.4G).
+2. Abra o app em qualquer tela.
+3. Escaneie o QR de uma etiqueta — ela abre na hora.
+
+Funciona também com o **código curto** impresso embaixo do QR, para quando o QR
+estiver amassado.
+
+## Se não funcionar
+
+**O leitor digita em qualquer lugar menos no app** — ele está em modo teclado,
+certo, mas o app pode estar com o foco num campo de texto. Toque numa área vazia
+da tela e escaneie de novo.
+
+**Nada acontece ao escanear** — o leitor pode estar em modo SPP (serial) em vez
+de HID (teclado). Esses aparelhos se configuram escaneando códigos impressos no
+próprio manual: procure o código de "HID Keyboard" ou "Modo teclado".
+
+**Teste rápido para saber o modo:** abra qualquer campo de texto (a busca de
+produtos serve), toque nele e escaneie. Se o conteúdo aparecer digitado, está em
+HID e o app reconhece.
+
+**Aparece "código lido, mas não é de uma etiqueta"** — o leitor funcionou, mas o
+código não é de uma etiqueta nossa. É o que acontece ao escanear o código de
+barras da embalagem de fábrica.
+
+**O leitor lê QR?** O GS-CH6 sim: a ficha diz "Padrão de digitalização: 2D" e
+"Area imager" com sensor CMOS, ou seja, é uma câmera. Leitores **1D** (feixe de
+laser vermelho em linha) são fisicamente incapazes de ler QR — nesses, seria
+preciso imprimir um código de barras comum na etiqueta.

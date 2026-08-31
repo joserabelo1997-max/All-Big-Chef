@@ -2,6 +2,7 @@ import { NavLink, Outlet } from 'react-router-dom'
 
 import { BarraCarrinho } from './BarraCarrinho'
 import { IndicadorSync } from './IndicadorSync'
+import { LeitorGlobal } from './LeitorGlobal'
 
 /**
  * Navegação inferior: alcance do polegar com o aparelho na mão, sem menu
@@ -21,6 +22,8 @@ const ABAS = [
 export function Layout() {
   return (
     <div className="flex h-full flex-col">
+      {/* Escuta o leitor de código de barras em qualquer tela. */}
+      <LeitorGlobal />
       <IndicadorSync />
 
       {/* pb-40 e não pb-24: a barra do carrinho fica acima da navegação, e sem
