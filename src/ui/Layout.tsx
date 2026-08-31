@@ -15,7 +15,7 @@ import { LeitorGlobal } from './LeitorGlobal'
 const ABAS = [
   { para: '/', rotulo: 'Painel', icone: '🏠', fim: true },
   { para: '/pastas', rotulo: 'Produtos', icone: '📦', fim: false },
-  { para: '/baixa', rotulo: 'Dar baixa', icone: '📷', fim: false },
+  { para: '/escanear', rotulo: 'Escanear', icone: '📷', fim: false },
   { para: '/config', rotulo: 'Ajustes', icone: '⚙️', fim: false },
 ] as const
 

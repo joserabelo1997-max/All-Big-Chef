@@ -69,7 +69,7 @@ export function Equipe() {
     <div className="mx-auto max-w-2xl px-4 py-6">
       <h1 className="text-2xl font-bold">Equipe</h1>
       <p className="mb-5 text-sm text-slate-500">
-        Quem aparece na lista ao imprimir e dar baixa. Não são logins — o acesso
+        Quem aparece na lista ao imprimir e ao escanear. Não são logins — o acesso
         ao app é o do restaurante.
       </p>
 

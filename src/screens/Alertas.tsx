@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 
+import { DIAS_DA_SEMANA } from '../domain/expiry'
 import {
   lerPreferencias,
   PREFERENCIAS_PADRAO,
@@ -84,6 +85,42 @@ export function Alertas() {
         <p className="text-xs text-slate-500">
           Etiquetas dentro desse prazo aparecem como “vence em breve” no painel.
           O que vence hoje e o que já venceu são sempre destacados.
+        </p>
+      </section>
+
+      <section className="mb-8">
+        <h2 className="rotulo">Dias em que a casa fecha</h2>
+        <div className="mb-2 flex flex-wrap gap-2">
+          {DIAS_DA_SEMANA.map((nome, dia) => {
+            const fechado = preferencias.diasFechados.includes(dia)
+            return (
+              <button
+                key={dia}
+                aria-pressed={fechado}
+                onClick={() =>
+                  void guardar({
+                    ...preferencias,
+                    diasFechados: fechado
+                      ? preferencias.diasFechados.filter((d) => d !== dia)
+                      : [...preferencias.diasFechados, dia].sort((a, b) => a - b),
+                  })
+                }
+                className={[
+                  'min-h-toque min-w-[4.5rem] rounded-xl border-2 px-3 font-semibold transition',
+                  fechado
+                    ? 'border-slate-900 bg-slate-900 text-white'
+                    : 'border-slate-200 bg-white',
+                ].join(' ')}
+              >
+                {nome}
+              </button>
+            )
+          })}
+        </div>
+        <p className="text-xs text-slate-500">
+          O painel passa a mostrar, à parte, o que vence nesses dias — porque com
+          a porta fechada não há ninguém para consumir, doar ou descartar. É um
+          aviso a mais, e não substitui o “vence em breve”.
         </p>
       </section>
 

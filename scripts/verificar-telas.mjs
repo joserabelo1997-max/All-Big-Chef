@@ -14,6 +14,8 @@ const ROTAS = [
   ['produtos', '#/produtos'],
   ['produto-novo', '#/produtos/novo'],
   ['fila', '#/fila'],
+  ['escanear', '#/escanear'],
+  ['alertas', '#/config/alertas'],
   ['equipe', '#/config/equipe'],
   ['fornecedores', '#/config/fornecedores'],
   ['configuracoes', '#/config'],

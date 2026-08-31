@@ -7,10 +7,12 @@ import {
   compararUrgencia,
   COR_DO_NIVEL,
   formatarData,
+  venceComACasaFechada,
   type NivelValidade,
 } from '../domain/expiry'
 import type { Etiqueta } from '../domain/types'
 import { db } from '../lib/db'
+import { usePreferencias } from '../lib/usePreferencias'
 import { useSessao } from '../lib/useSessao'
 
 const FILTROS = [
@@ -18,16 +20,24 @@ const FILTROS = [
   { chave: 'vencidas', rotulo: 'Vencidas' },
   { chave: 'hoje', rotulo: 'Hoje' },
   { chave: 'vencendo', rotulo: 'Em breve' },
+  { chave: 'fechada', rotulo: '🔒 Casa fechada' },
 ] as const
 
 type Filtro = (typeof FILTROS)[number]['chave']
 
-/** Quais níveis de validade cada filtro deixa passar. */
+/**
+ * Quais níveis de validade cada filtro deixa passar.
+ *
+ * `fechada` é `null` porque não filtra por nível: uma etiqueta que vence no
+ * domingo fechado pode estar tranquilamente no nível "ok" hoje, e é justamente
+ * essa que precisa aparecer.
+ */
 const NIVEIS_DO_FILTRO: Record<Filtro, NivelValidade[] | null> = {
   todas: null,
   vencidas: ['vencido'],
   hoje: ['hoje'],
   vencendo: ['atencao', 'hoje', 'vencido'],
+  fechada: null,
 }
 
 /**
@@ -39,6 +49,7 @@ const NIVEIS_DO_FILTRO: Record<Filtro, NivelValidade[] | null> = {
  */
 export function Etiquetas() {
   const { orgId, carregando } = useSessao()
+  const { diasFechados } = usePreferencias(orgId)
   const [params, setParams] = useSearchParams()
   const filtro = (params.get('filtro') as Filtro | null) ?? 'todas'
 
@@ -55,10 +66,13 @@ export function Etiquetas() {
   const listadas = useMemo(() => {
     const permitidos = NIVEIS_DO_FILTRO[filtro]
     return etiquetas
+      .filter(
+        (e) => filtro !== 'fechada' || venceComACasaFechada(e.expires_at, diasFechados),
+      )
       .map((etiqueta) => ({ etiqueta, situacao: classificar(etiqueta.expires_at) }))
       .filter(({ situacao }) => !permitidos || permitidos.includes(situacao.nivel))
       .sort((a, b) => compararUrgencia(a.situacao, b.situacao))
-  }, [etiquetas, filtro])
+  }, [etiquetas, filtro, diasFechados])
 
   if (carregando) return <div className="px-4 py-20 text-center text-slate-400">Carregando…</div>
 

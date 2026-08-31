@@ -43,7 +43,14 @@ export function FilaImpressao() {
   const { itens, somarItem, limpar, totalEtiquetas } = useCarrinho()
   const navegar = useNavigate()
 
-  const [lote, setLote] = useState('')
+  /**
+   * Lote digitado na bancada, por produto — só quando difere do cadastrado.
+   *
+   * O lote padrão vem de `produto.lote_atual`, porque ele está impresso na
+   * embalagem do fabricante e não muda a cada impressão. Este mapa guarda
+   * apenas a exceção: a caixa aberta hoje que veio de outro lote.
+   */
+  const [lotes, setLotes] = useState<Record<string, string>>({})
   const [membroId, setMembroId] = useState<string | null>(membroSelecionado())
   const [membroNome, setMembroNome] = useState<string | null>(null)
   const [modelo, setModelo] = useState<ModeloEtiqueta>(MODELO_PADRAO)
@@ -82,6 +89,11 @@ export function FilaImpressao() {
     [],
   )
 
+  /** O lote que vai sair impresso: o da bancada, se houver; senão o do cadastro. */
+  function loteDe(produto: Produto): string {
+    return lotes[produto.id] ?? produto.lote_atual ?? ''
+  }
+
   /** Etiqueta de exemplo do primeiro item, só para a prévia. Nada é gravado. */
   const previa = useMemo(() => {
     const primeira = linhas[0]
@@ -91,9 +103,9 @@ export function FilaImpressao() {
       produto: primeira.produto,
       membroId,
       membroNome,
-      lote,
+      lote: lotes[primeira.produto.id] ?? primeira.produto.lote_atual ?? '',
     }).etiqueta
-  }, [linhas, orgId, membroId, membroNome, lote])
+  }, [linhas, orgId, membroId, membroNome, lotes])
 
   async function executar() {
     if (linhas.length === 0 || !orgId || ocupado) return
@@ -121,7 +133,7 @@ export function FilaImpressao() {
             pasta,
             membroId,
             membroNome,
-            lote,
+            lote: loteDe(produto),
           })
 
           await salvarESincronizar('labels', etiqueta)
@@ -218,35 +230,43 @@ export function FilaImpressao() {
 
       <ul className="mb-6 grid gap-2">
         {linhas.map(({ produto, quantidade }) => (
-          <li key={produto.id} className="cartao flex items-center gap-3 p-3">
-            <span className="min-w-0 flex-1">
-              <span className="block truncate font-semibold">{produto.nome}</span>
-              <span className="block text-sm text-slate-500">
-                vence em {produto.shelf_life_days}{' '}
-                {produto.shelf_life_days === 1 ? 'dia' : 'dias'}
+          <li key={produto.id} className="cartao p-3">
+            <div className="flex items-center gap-3">
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-semibold">{produto.nome}</span>
+                <span className="block text-sm text-slate-500">
+                  vence em {produto.shelf_life_days}{' '}
+                  {produto.shelf_life_days === 1 ? 'dia' : 'dias'}
+                </span>
               </span>
-            </span>
-            <StepperQuantidade
-              quantidade={quantidade}
-              rotulo={produto.nome}
-              aoSomar={(delta) => somarItem(produto.id, delta)}
-            />
+              <StepperQuantidade
+                quantidade={quantidade}
+                rotulo={produto.nome}
+                aoSomar={(delta) => somarItem(produto.id, delta)}
+              />
+            </div>
+
+            {/* O lote é por produto, e não um campo único para a fila inteira:
+                ele vem da embalagem do fabricante, e dois produtos na mesma fila
+                quase nunca compartilham lote. */}
+            <label className="mt-2 flex items-center gap-2 text-xs text-slate-500">
+              Lote
+              <input
+                className="min-h-[2.5rem] flex-1 rounded-lg border-2 border-slate-200 px-2 font-mono text-sm uppercase"
+                value={loteDe(produto)}
+                onChange={(e) =>
+                  setLotes((atual) => ({ ...atual, [produto.id]: e.target.value }))
+                }
+                placeholder="Sem lote"
+                autoCapitalize="characters"
+                autoCorrect="off"
+                spellCheck={false}
+                aria-label={`Lote de ${produto.nome}`}
+              />
+            </label>
           </li>
         ))}
       </ul>
-
-      <section className="mb-6">
-        <label className="rotulo" htmlFor="lote">
-          Lote <span className="font-normal">(opcional, vale para todas)</span>
-        </label>
-        <input
-          id="lote"
-          className="campo"
-          value={lote}
-          onChange={(e) => setLote(e.target.value)}
-          placeholder="Ex.: L-4412"
-        />
-      </section>
 
       <section className="mb-6">
         <label className="rotulo">Responsável</label>

@@ -19,7 +19,7 @@ import { SeletorMembro } from '../ui/SeletorMembro'
  * Detalhe da etiqueta — o destino do QR impresso.
  *
  * Escanear com a câmera nativa do celular cai direto aqui, sem precisar abrir o
- * app antes. É a tela onde a baixa acontece, então o estado da validade é a
+ * app antes. É onde a etiqueta é encerrada, então o estado da validade é a
  * primeira coisa visível: quem chegou aqui precisa decidir se o produto ainda
  * serve.
  */
@@ -78,7 +78,7 @@ export function EtiquetaDetalhe() {
           Ela pode ter sido impressa em outro aparelho e ainda não ter
           sincronizado com este.
         </p>
-        <Link to="/baixa" className="btn-secundario mt-6 inline-flex">
+        <Link to="/escanear" className="btn-secundario mt-6 inline-flex">
           Voltar
         </Link>
       </div>
@@ -112,7 +112,7 @@ export function EtiquetaDetalhe() {
 
       {ativa && (
         <section className="mb-6">
-          <h2 className="rotulo">Responsável pela baixa</h2>
+          <h2 className="rotulo">Responsável</h2>
           <div className="mb-4">
             <SeletorMembro
               orgId={orgId}
@@ -201,7 +201,7 @@ export function EtiquetaDetalhe() {
         </ol>
       </section>
 
-      <button className="btn-secundario mt-6 w-full" onClick={() => navegar('/baixa')}>
+      <button className="btn-secundario mt-6 w-full" onClick={() => navegar("/escanear")}>
         Escanear outra
       </button>
     </div>

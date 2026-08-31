@@ -22,7 +22,7 @@ const tela = <T extends string>(
 
 const Alertas = tela(() => import('./screens/Alertas'), 'Alertas')
 const Configuracoes = tela(() => import('./screens/Configuracoes'), 'Configuracoes')
-const DarBaixa = tela(() => import('./screens/DarBaixa'), 'DarBaixa')
+const EscanearQr = tela(() => import('./screens/EscanearQr'), 'EscanearQr')
 const EditorEtiqueta = tela(() => import('./screens/EditorEtiqueta'), 'EditorEtiqueta')
 const DiagnosticoImpressora = tela(
   () => import('./screens/DiagnosticoImpressora'),
@@ -60,7 +60,10 @@ export function App() {
           {/* Alcançada apenas pela BarraCarrinho, nunca pela navegação. */}
           <Route path="fila" element={<Lazy><FilaImpressao /></Lazy>} />
           <Route path="etiquetas" element={<Lazy><Etiquetas /></Lazy>} />
-          <Route path="baixa" element={<Lazy><DarBaixa /></Lazy>} />
+          <Route path="escanear" element={<Lazy><EscanearQr /></Lazy>} />
+          {/* `/baixa` era o nome antigo da tela. Continua respondendo porque
+              pode estar salvo num atalho na tela inicial de algum aparelho. */}
+          <Route path="baixa" element={<Navigate to="/escanear" replace />} />
           {/* Destino do QR impresso: abre direto a etiqueta escaneada. */}
           <Route path="l/:labelId" element={<Lazy><EtiquetaDetalhe /></Lazy>} />
 

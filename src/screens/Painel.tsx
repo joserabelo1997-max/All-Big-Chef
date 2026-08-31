@@ -6,10 +6,13 @@ import {
   classificar,
   compararUrgencia,
   COR_DO_NIVEL,
+  DIAS_DA_SEMANA,
   formatarData,
+  venceComACasaFechada,
   type NivelValidade,
 } from '../domain/expiry'
 import { db } from '../lib/db'
+import { usePreferencias } from '../lib/usePreferencias'
 import { useSessao } from '../lib/useSessao'
 
 /**
@@ -21,6 +24,7 @@ import { useSessao } from '../lib/useSessao'
  */
 export function Painel() {
   const { orgId, carregando } = useSessao()
+  const { diasFechados } = usePreferencias(orgId)
 
   const ativas = useLiveQuery(
     async () => {
@@ -32,7 +36,7 @@ export function Painel() {
     [],
   )
 
-  const { contagens, urgentes } = useMemo(() => {
+  const { contagens, urgentes, comACasaFechada } = useMemo(() => {
     const avaliadas = ativas.map((etiqueta) => ({
       etiqueta,
       situacao: classificar(etiqueta.expires_at),
@@ -51,8 +55,15 @@ export function Painel() {
       .sort((a, b) => compararUrgencia(a.situacao, b.situacao))
       .slice(0, 8)
 
-    return { contagens, urgentes }
-  }, [ativas])
+    // Contador à parte, e não uma faixa a mais no "vence em breve": o que vence
+    // com a casa fechada precisa ser resolvido ANTES de fechar, mesmo estando
+    // fora do prazo de aviso normal.
+    const comACasaFechada = ativas.filter((e) =>
+      venceComACasaFechada(e.expires_at, diasFechados),
+    ).length
+
+    return { contagens, urgentes, comACasaFechada }
+  }, [ativas, diasFechados])
 
   const totalAlerta = contagens.vencido + contagens.hoje + contagens.atencao
 
@@ -90,12 +101,39 @@ export function Painel() {
         />
       </div>
 
+      {/* O quarto contador vem numa faixa inteira, e não como uma quarta caixa:
+          o rótulo precisa dizer QUAL dia está fechado, e isso não cabe num
+          terço de linha sem virar abreviação que ninguém decifra. */}
+      {comACasaFechada > 0 && (
+        <Link
+          to="/etiquetas?filtro=fechada"
+          className="mb-6 flex items-center gap-3 rounded-2xl bg-slate-800 px-4 py-3 text-white shadow-sm transition active:scale-[0.99]"
+        >
+          <span aria-hidden className="text-2xl">
+            🔒
+          </span>
+          <span className="flex-1">
+            <span className="block text-lg font-bold tabular-nums leading-tight">
+              {comACasaFechada}{' '}
+              {comACasaFechada === 1 ? 'etiqueta vence' : 'etiquetas vencem'} com a
+              casa fechada
+            </span>
+            <span className="block text-xs opacity-80">
+              Fecha {listarDias(diasFechados)} · resolva antes
+            </span>
+          </span>
+          <span aria-hidden className="opacity-50">
+            ›
+          </span>
+        </Link>
+      )}
+
       <div className="mb-8 grid gap-3">
         <Link to="/pastas" className="btn-primario">
           🏷️ Etiquetar produtos
         </Link>
-        <Link to="/baixa" className="btn-secundario">
-          📷 Dar baixa
+        <Link to="/escanear" className="btn-secundario">
+          📷 Escanear QR Code
         </Link>
       </div>
 
@@ -143,6 +181,17 @@ export function Painel() {
       </section>
     </div>
   )
+}
+
+/** "domingo e segunda", "domingo, segunda e terça". */
+function listarDias(dias: number[]): string {
+  const nomes = [...dias]
+    .sort((a, b) => a - b)
+    .map((d) => DIAS_DA_SEMANA[d]?.toLowerCase())
+    .filter(Boolean)
+
+  if (nomes.length <= 1) return nomes.join('')
+  return `${nomes.slice(0, -1).join(', ')} e ${nomes.at(-1)}`
 }
 
 function Contador({

@@ -7,13 +7,13 @@ import { useSessao } from '../lib/useSessao'
 import { extrairIdDaEtiqueta, iniciarLeitura, type ControleLeitura } from '../scanning/scanner'
 
 /**
- * Leitura de QR para dar baixa.
+ * Leitura de QR — a tela que escaneia a etiqueta.
  *
  * Duas entradas, e as duas importam. A câmera é o caminho normal; a digitação
  * do código curto é o caminho quando a etiqueta está amassada, molhada ou
  * coberta de gordura — o que, numa cozinha, não é caso de borda.
  */
-export function DarBaixa() {
+export function EscanearQr() {
   const navegar = useNavigate()
   const { orgId } = useSessao()
   const video = useRef<HTMLVideoElement>(null)
@@ -75,7 +75,7 @@ export function DarBaixa() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
-      <h1 className="mb-5 text-2xl font-bold">Dar baixa</h1>
+      <h1 className="mb-5 text-2xl font-bold">Escanear QR Code</h1>
 
       {erro && (
         <p className="mb-4 rounded-xl border-2 border-red-200 bg-red-50 p-3 text-sm text-red-800">

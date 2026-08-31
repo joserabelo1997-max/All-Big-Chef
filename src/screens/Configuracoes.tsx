@@ -32,7 +32,7 @@ const ITENS = [
     para: '/config/equipe',
     icone: '👥',
     titulo: 'Equipe',
-    descricao: 'Quem aparece na lista ao imprimir e dar baixa',
+    descricao: 'Quem aparece na lista ao imprimir e ao escanear',
   },
   {
     para: '/config/fornecedores',

@@ -4,8 +4,10 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
 import { PADROES_PRODUTO, type Produto } from '../domain/types'
 import { db, salvarESincronizar } from '../lib/db'
+import { resolverFornecedor } from '../lib/fornecedores'
 import { novoId } from '../lib/ids'
 import { useSessao } from '../lib/useSessao'
+import { CampoFornecedor } from '../ui/CampoFornecedor'
 
 /** Atalhos de validade que cobrem a maioria dos casos de cozinha. */
 const DIAS_COMUNS = [1, 2, 3, 5, 7, 10, 15, 30]
@@ -25,7 +27,9 @@ export function ProdutoForm() {
   const [nome, setNome] = useState('')
   const [dias, setDias] = useState(3)
   const [pastaId, setPastaId] = useState(params.get('pasta') ?? '')
-  const [fornecedorId, setFornecedorId] = useState('')
+  /** O NOME do fornecedor, e não o id: o campo aceita um nome ainda inédito. */
+  const [fornecedor, setFornecedor] = useState('')
+  const [lote, setLote] = useState('')
   const [unidade, setUnidade] = useState('')
   const [observacoes, setObservacoes] = useState('')
   const [salvando, setSalvando] = useState(false)
@@ -35,28 +39,24 @@ export function ProdutoForm() {
     setNome(existente.nome)
     setDias(existente.shelf_life_days)
     setPastaId(existente.folder_id ?? '')
-    setFornecedorId(existente.supplier_id ?? '')
+    setLote(existente.lote_atual ?? '')
     setUnidade(existente.unidade ?? '')
     setObservacoes(existente.observacoes ?? '')
   }, [existente])
+
+  // O nome do fornecedor vem numa busca à parte porque o produto guarda o id.
+  useEffect(() => {
+    if (!existente?.supplier_id) return
+    void db.suppliers.get(existente.supplier_id).then((f) => {
+      if (f) setFornecedor(f.nome)
+    })
+  }, [existente?.supplier_id])
 
   const pastas = useLiveQuery(
     async () => {
       if (!orgId) return []
       const todas = await db.folders.where('org_id').equals(orgId).toArray()
       return todas.filter((p) => !p.deleted_at).sort((a, b) => a.ordem - b.ordem)
-    },
-    [orgId],
-    [],
-  )
-
-  const fornecedores = useLiveQuery(
-    async () => {
-      if (!orgId) return []
-      const todos = await db.suppliers.where('org_id').equals(orgId).toArray()
-      return todos
-        .filter((f) => !f.deleted_at && f.ativo)
-        .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
     },
     [orgId],
     [],
@@ -69,6 +69,11 @@ export function ProdutoForm() {
     setSalvando(true)
     const agora = new Date().toISOString()
 
+    // Cria o fornecedor inédito antes de gravar o produto, para que o produto
+    // já nasça apontando para ele. Se a rede estiver fora, os dois saem juntos
+    // na outbox, nesta ordem.
+    const fornecedorId = await resolverFornecedor(orgId, fornecedor)
+
     const registro: Produto = {
       // Ao editar, as facetas existentes prevalecem; o padrão só preenche o que
       // um produto antigo ainda não tem.
@@ -77,9 +82,12 @@ export function ProdutoForm() {
       id: existente?.id ?? novoId(),
       org_id: orgId,
       folder_id: pastaId || null,
-      supplier_id: fornecedorId || null,
+      supplier_id: fornecedorId,
       nome: limpo,
       shelf_life_days: dias,
+      // Lote da embalagem do fabricante: fica no produto porque não é valor
+      // livre por impressão — muda quando muda o lote comprado.
+      lote_atual: lote.trim() || null,
       unidade: unidade.trim() || null,
       observacoes: observacoes.trim() || null,
       ativo: true,
@@ -181,25 +189,25 @@ export function ProdutoForm() {
           </select>
         </div>
 
+        <CampoFornecedor orgId={orgId} valor={fornecedor} aoMudar={setFornecedor} />
+
         <div>
-          <label className="rotulo" htmlFor="fornecedor">
-            Fornecedor padrão
+          <label className="rotulo" htmlFor="lote">
+            Lote da embalagem <span className="font-normal">(opcional)</span>
           </label>
-          <select
-            id="fornecedor"
-            className="campo"
-            value={fornecedorId}
-            onChange={(e) => setFornecedorId(e.target.value)}
-          >
-            <option value="">Não informar</option>
-            {fornecedores.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.nome}
-              </option>
-            ))}
-          </select>
+          <input
+            id="lote"
+            className="campo font-mono"
+            value={lote}
+            onChange={(e) => setLote(e.target.value)}
+            placeholder="Como vem impresso na caixa"
+            autoCapitalize="characters"
+            autoCorrect="off"
+            spellCheck={false}
+          />
           <p className="mt-1 text-xs text-slate-500">
-            Sai impresso na etiqueta. Pode ser trocado na hora de imprimir.
+            Sai em todas as etiquetas deste produto. Troque aqui quando trocar o
+            lote comprado — na hora de imprimir ainda dá para ajustar.
           </p>
         </div>
 
