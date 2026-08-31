@@ -6,6 +6,7 @@ import { situacaoDeEstoque } from '../domain/estoque'
 import type { Produto } from '../domain/types'
 import { db } from '../lib/db'
 import { useSessao } from '../lib/useSessao'
+import { PendenciasEstoque } from '../ui/PendenciasEstoque'
 
 /**
  * Lista do estoque.
@@ -60,6 +61,10 @@ export function Estoque() {
           {produtos.length} {produtos.length === 1 ? 'item controlado' : 'itens controlados'}
         </p>
       </header>
+
+      {/* O que falta configurar vem ANTES do que falta comprar: sem telefone
+          de fornecedor, o botão de pedir não leva a lugar nenhum. */}
+      <PendenciasEstoque orgId={orgId} />
 
       {faltando > 0 && (
         <Link to="/estoque/repor" className="cartao mb-4 flex items-center gap-3 border-amber-300 bg-amber-50 p-4">

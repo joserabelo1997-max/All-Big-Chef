@@ -2,7 +2,9 @@ name: Deploy GitHub Pages
 
 on:
   push:
-    branches: [main]
+    # Filtro largo de propósito: quem decide de verdade é o `if` do job abaixo.
+    # Aqui só evitamos criar execução para branch que nunca seria publicada.
+    branches: [main, 'claude/**']
   workflow_dispatch:
 
 # Permissões exigidas pelo deploy oficial do Pages via Actions.
@@ -18,6 +20,14 @@ concurrency:
 
 jobs:
   build:
+    # Publica a branch PADRÃO do repositório, qualquer que ela seja — que é
+    # exatamente o que a regra de proteção do ambiente `github-pages` permite.
+    # Push em qualquer outra branch roda e falha no deploy, sem publicar nada.
+    #
+    # Sem nome de branch escrito aqui de propósito: no dia em que a padrão
+    # virar `main`, isto continua correto sem precisar de edição — e é por isso
+    # que trocar a branch padrão deixou de ser pré-requisito para publicar.
+    if: github.ref_name == github.event.repository.default_branch
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

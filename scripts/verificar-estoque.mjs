@@ -95,6 +95,35 @@ const saldoDe = (unidade = 'kg') =>
     [cenario.produtoId, unidade],
   )
 
+// --- 0. O cartão de pendências some quando está tudo configurado ----------
+// O cenário acima já tem fornecedor com telefone e alguém que pode aprovar;
+// falta só o dia de fechamento, então o cartão precisa mostrar UMA pendência.
+await pagina.goto(`${BASE}#/estoque`, { waitUntil: 'networkidle' })
+await pagina.waitForTimeout(700)
+await pagina.screenshot({ path: `${SAIDA}/pendencias-parcial.png`, fullPage: true })
+
+const parcial = await pagina.textContent('body')
+conferir('cartão cobra os dias de fechamento', parcial.includes('Dias de fechamento'))
+conferir(
+  'não cobra telefone nem aprovador, que já estão configurados',
+  !parcial.includes('Nenhum fornecedor tem WhatsApp') &&
+    !parcial.includes('Ninguém pode liberar'),
+)
+
+// Marcando os dias de fechamento, o cartão precisa sumir INTEIRO — sem precisar
+// recarregar, porque tudo vem de useLiveQuery sobre o Dexie.
+await pagina.evaluate(async (orgId) => {
+  const { salvarPreferencias } = await import('/All-Big-Chef/src/lib/configuracoes.ts')
+  await salvarPreferencias(orgId, { diasAntes: 2, horario: '08:00', diasFechados: [0, 1] })
+}, cenario.orgId)
+await pagina.waitForTimeout(900)
+await pagina.screenshot({ path: `${SAIDA}/pendencias-resolvidas.png`, fullPage: true })
+
+conferir(
+  'cartão some sozinho quando não falta mais nada',
+  !(await pagina.textContent('body')).includes('Falta configurar'),
+)
+
 // --- 1. Entrada de 10 kg pela interface -----------------------------------
 await pagina.goto(`${BASE}#/estoque/${cenario.produtoId}`, { waitUntil: 'networkidle' })
 await pagina.waitForTimeout(600)
