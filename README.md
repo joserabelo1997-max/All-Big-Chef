@@ -141,7 +141,17 @@ leitura nunca cai na tela errada, sem depender de ninguém conferir.
 
 ## Deploy
 
-Push na branch `main` dispara o build e publica no GitHub Pages
-(`.github/workflows/deploy.yml`). As variáveis `VITE_*` vêm dos secrets do
-repositório — nenhuma delas é sigilosa, quem protege os dados é o RLS do
-Supabase.
+Push na **branch padrão do repositório** dispara o build e publica no GitHub
+Pages (`.github/workflows/deploy.yml`). Push em qualquer outra branch é ignorado
+sem falhar.
+
+O nome da branch não está escrito na condição — ela compara com
+`github.event.repository.default_branch`, que é exatamente a regra que a
+proteção do ambiente `github-pages` aplica. Trocar a branch padrão continua
+funcionando sem editar o workflow.
+
+O build roda `typecheck`, `test` e `build` antes de publicar, então um push
+quebrado falha sem chegar ao ar.
+
+As variáveis `VITE_*` vêm dos secrets do repositório — nenhuma delas é sigilosa,
+quem protege os dados é o RLS do Supabase.
