@@ -32,6 +32,14 @@ const Equipe = tela(() => import('./screens/Equipe'), 'Equipe')
 const Estoque = tela(() => import('./screens/Estoque'), 'Estoque')
 const EstoqueItem = tela(() => import('./screens/EstoqueItem'), 'EstoqueItem')
 const Contagem = tela(() => import('./screens/Contagem'), 'Contagem')
+const EtiquetaInventarioDetalhe = tela(
+  () => import('./screens/EtiquetaInventarioDetalhe'),
+  'EtiquetaInventarioDetalhe',
+)
+const ImprimirInventario = tela(
+  () => import('./screens/ImprimirInventario'),
+  'ImprimirInventario',
+)
 const Repor = tela(() => import('./screens/Repor'), 'Repor')
 const Requisicoes = tela(() => import('./screens/Requisicoes'), 'Requisicoes')
 const EtiquetaDetalhe = tela(() => import('./screens/EtiquetaDetalhe'), 'EtiquetaDetalhe')
@@ -79,6 +87,13 @@ export function App() {
           <Route path="estoque/requisicoes" element={<Lazy><Requisicoes /></Lazy>} />
           <Route path="estoque/contagem" element={<Lazy><Contagem /></Lazy>} />
           <Route path="estoque/:produtoId" element={<Lazy><EstoqueItem /></Lazy>} />
+          <Route
+            path="estoque/:produtoId/inventario"
+            element={<Lazy><ImprimirInventario /></Lazy>}
+          />
+          {/* Destino do QR de inventário. É uma rota SEPARADA de `/l/` de
+              propósito: uma leitura nunca é confundida com a outra. */}
+          <Route path="i/:tagId" element={<Lazy><EtiquetaInventarioDetalhe /></Lazy>} />
 
           <Route path="editor" element={<Lazy><EditorEtiqueta /></Lazy>} />
           <Route path="relatorios" element={<Lazy><Relatorios /></Lazy>} />

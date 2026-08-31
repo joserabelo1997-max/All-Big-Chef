@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { db } from '../lib/db'
 import { normalizarCodigo } from '../lib/ids'
 import { useSessao } from '../lib/useSessao'
-import { extrairIdDaEtiqueta, iniciarLeitura, type ControleLeitura } from '../scanning/scanner'
+import { identificarCodigo, iniciarLeitura, type ControleLeitura } from '../scanning/scanner'
 
 /**
  * Leitura de QR — a tela que escaneia a etiqueta.
@@ -33,14 +33,15 @@ export function EscanearQr() {
 
     try {
       controle.current = await iniciarLeitura(video.current, (texto) => {
-        const id = extrairIdDaEtiqueta(texto)
-        if (!id) return
+        const lido = identificarCodigo(texto)
+        if (!lido) return
         // Para a câmera antes de navegar: deixar a trilha de vídeo aberta
         // mantém a luz da câmera acesa e consome bateria à toa.
         controle.current?.parar()
         controle.current = null
         setLendo(false)
-        navegar(`/l/${id}`)
+        // O caminho do QR decide a tela: inventário nunca cai na validade.
+        navegar(lido.tipo === 'inventario' ? `/i/${lido.id}` : `/l/${lido.id}`)
       })
       setLendo(true)
     } catch (e) {
@@ -65,12 +66,20 @@ export function EscanearQr() {
     const achada = await db.labels.where('short_code').equals(limpo).first()
     if (achada) {
       navegar(`/l/${achada.id}`)
-    } else {
-      setErro(
-        `Nenhuma etiqueta com o código ${limpo}. Confira os caracteres — ` +
-          'a etiqueta pode não ter sincronizado ainda.',
-      )
+      return
     }
+
+    // O código curto também pode ser de uma etiqueta de inventário.
+    const doInventario = await db.inventory_tags.where('short_code').equals(limpo).first()
+    if (doInventario) {
+      navegar(`/i/${doInventario.id}`)
+      return
+    }
+
+    setErro(
+      `Nenhuma etiqueta com o código ${limpo}. Confira os caracteres — ` +
+        'a etiqueta pode não ter sincronizado ainda.',
+    )
   }
 
   return (

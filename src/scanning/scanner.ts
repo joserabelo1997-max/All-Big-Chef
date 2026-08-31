@@ -102,6 +102,8 @@ export async function iniciarLeitura(
   return { parar: () => controles?.stop() }
 }
 
+const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i
+
 /**
  * Extrai o id da etiqueta do conteúdo lido.
  *
@@ -109,7 +111,36 @@ export async function iniciarLeitura(
  * etiquetas antigas ou coladas por outro sistema podem trazer só o id.
  */
 export function extrairIdDaEtiqueta(conteudo: string): string | null {
-  const uuid = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i
-  const achado = conteudo.match(uuid)
+  const achado = conteudo.match(UUID)
   return achado ? achado[0].toLowerCase() : null
+}
+
+/** Os dois tipos de QR que o app imprime. */
+export type TipoDeCodigo = 'etiqueta' | 'inventario'
+
+export interface CodigoLido {
+  tipo: TipoDeCodigo
+  id: string
+}
+
+/**
+ * Distingue a etiqueta de validade (`#/l/…`) da etiqueta de inventário
+ * (`#/i/…`).
+ *
+ * A separação está no CAMINHO da URL, e não num campo dentro do código: um QR
+ * de inventário nunca pode cair na tela de validade e sugerir uma data que ele
+ * não tem. Isso é o que sustenta o "sem conflito" entre as duas etiquetas —
+ * não depende de ninguém lembrar de conferir.
+ *
+ * Um uuid solto, sem caminho, continua sendo tratado como etiqueta de validade:
+ * é o que as etiquetas já impressas trazem, e elas precisam continuar lendo.
+ */
+export function identificarCodigo(conteudo: string): CodigoLido | null {
+  const achado = conteudo.match(UUID)
+  if (!achado) return null
+
+  const id = achado[0].toLowerCase()
+  const antes = conteudo.slice(0, achado.index ?? 0)
+
+  return { tipo: /\/i\/$/.test(antes) ? 'inventario' : 'etiqueta', id }
 }

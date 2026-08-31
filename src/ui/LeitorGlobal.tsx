@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 
 import { db } from '../lib/db'
 import { normalizarCodigo } from '../lib/ids'
-import { extrairIdDaEtiqueta } from '../scanning/scanner'
+import { identificarCodigo } from '../scanning/scanner'
 import { useLeitorHid } from '../scanning/useLeitorHid'
 
 /**
@@ -13,9 +13,10 @@ import { useLeitorHid } from '../scanning/useLeitorHid'
  * conferência de geladeira viável: pegar o leitor, passar pelos potes um a um e
  * ver o estado de cada um sem tocar no aparelho.
  *
- * Aceita as duas formas que podem estar impressas: a URL completa do nosso QR e
- * o código curto de seis caracteres, que é o que sobra quando o QR está
- * amassado e alguém imprimiu só ele.
+ * Reconhece os DOIS QR que o app imprime — o de validade (`#/l/`) e o de
+ * inventário (`#/i/`) — pelo caminho da URL, e abre a tela certa para cada um.
+ * Também aceita o código curto impresso, que é o que sobra quando o QR está
+ * amassado; nesse caso procura nas duas tabelas.
  */
 export function LeitorGlobal() {
   const navegar = useNavigate()
@@ -23,21 +24,32 @@ export function LeitorGlobal() {
 
   useLeitorHid((codigo) => {
     void (async () => {
-      // 1) Formato normal: a URL do nosso QR, da qual extraímos o uuid.
-      const id = extrairIdDaEtiqueta(codigo)
-      if (id) {
+      // 1) Formato normal: a URL do nosso QR. O caminho diz qual das duas
+      //    etiquetas é, então a tela de validade nunca recebe um pote de
+      //    inventário — que não tem data nenhuma para mostrar.
+      const lido = identificarCodigo(codigo)
+      if (lido) {
         setAviso(null)
-        navegar(`/l/${id}`)
+        navegar(lido.tipo === 'inventario' ? `/i/${lido.id}` : `/l/${lido.id}`)
         return
       }
 
-      // 2) Código curto impresso na etiqueta.
+      // 2) Código curto impresso. Procura nas duas tabelas: quem digita o
+      //    código de um pote de inventário espera cair na contagem, não num
+      //    "não encontrado".
       const curto = normalizarCodigo(codigo)
       if (curto.length >= 4 && curto.length <= 10) {
         const achada = await db.labels.where('short_code').equals(curto).first()
         if (achada) {
           setAviso(null)
           navegar(`/l/${achada.id}`)
+          return
+        }
+
+        const doInventario = await db.inventory_tags.where('short_code').equals(curto).first()
+        if (doInventario) {
+          setAviso(null)
+          navegar(`/i/${doInventario.id}`)
           return
         }
       }

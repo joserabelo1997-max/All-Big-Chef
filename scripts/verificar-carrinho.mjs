@@ -157,8 +157,15 @@ conferir('a fila anuncia 20 etiquetas', textoFila.includes('20'))
 await pagina.screenshot({ path: `${SAIDA}/fila.png`, fullPage: true })
 
 // --- 7. Não existe mais aba de imprimir --------------------------------------
+// O que esta checagem protege é a ausência da aba "Imprimir": a impressão
+// começa nos produtos e termina na barra do carrinho. O número de abas em si
+// pode crescer — o Estoque entrou como a quinta.
 const abas = await pagina.locator('nav a').allTextContents()
-conferir('a navegação tem 4 abas, sem "Imprimir"', abas.length === 4, abas.join(' | '))
+conferir(
+  'a navegação não tem aba "Imprimir"',
+  !abas.some((a) => a.includes('Imprimir')),
+  abas.join(' | '),
+)
 
 // --- 8. Diminuir até zero remove o item --------------------------------------
 for (let i = 0; i < 5; i++) {

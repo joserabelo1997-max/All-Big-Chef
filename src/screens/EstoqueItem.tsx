@@ -49,6 +49,17 @@ export function EstoqueItem() {
     [],
   )
 
+  /** Quantas etiquetas de inventário deste produto ainda estão na prateleira. */
+  const emEstoque = useLiveQuery(
+    async () => {
+      if (!produtoId) return 0
+      const todas = await db.inventory_tags.where('product_id').equals(produtoId).toArray()
+      return todas.filter((t) => !t.deleted_at && t.status === 'em_estoque').length
+    },
+    [produtoId],
+    0,
+  )
+
   const unidades = useMemo<UnidadeMovimento[]>(() => {
     if (!produto) return []
     if (produto.unidade_estoque === 'ambos') return ['kg', 'un']
@@ -186,6 +197,17 @@ export function EstoqueItem() {
           </button>
         </div>
       )}
+
+      {/* Etiquetas de inventário: contagem, sem validade. Ficam aqui porque é
+          onde se está quando se olha o que está guardado. */}
+      <Link to={`/estoque/${produto.id}/inventario`} className="btn-secundario mb-6 w-full">
+        🔖 Etiquetas de inventário
+        {emEstoque > 0 && (
+          <span className="ml-2 rounded-full bg-slate-900 px-2 py-0.5 text-xs font-bold text-white">
+            {emEstoque}
+          </span>
+        )}
+      </Link>
 
       {unidades.map((u) => {
         const doLote = lotes.get(u) ?? []

@@ -234,6 +234,117 @@ export const MODELO_PADRAO: ModeloEtiqueta = {
   ],
 }
 
+/**
+ * Modelo da etiqueta de INVENTÁRIO, 60 × 40 mm.
+ *
+ * Deliberadamente sem nenhuma data, como você pediu: serve para contar o que a
+ * casa produziu e guardou, e cada unidade ganha um QR único para que a
+ * conferência do freezer vire passar o leitor.
+ *
+ * Não é uma variação da etiqueta de validade: é outra coisa, com outro destino
+ * (`#/i/…` em vez de `#/l/…`) e outra tabela. Uma leitura nunca é confundida
+ * com a outra.
+ *
+ * Como aqui não há validade competindo por espaço, o QR fica bem maior — 24 mm
+ * contra 17 mm da etiqueta de validade. A etiqueta de inventário é feita para
+ * ser lida em série, no frio, com o leitor a alguma distância; um QR grande é o
+ * que faz uma conferência de trinta potes não virar trinta tentativas.
+ */
+export const MODELO_INVENTARIO: ModeloEtiqueta = {
+  id: 'inventario-60x40',
+  nome: 'Inventário 60 × 40',
+  larguraMm: 60,
+  alturaMm: 40,
+  elementos: [
+    {
+      id: 'produto',
+      tipo: 'texto',
+      x: 2,
+      y: 1.5,
+      largura: 56,
+      altura: 9,
+      conteudo: '{{produto}}',
+      // 4,4 mm e não 5: duas linhas de 5 mm somam 10 e transbordam a caixa de
+      // 9 — o nome longo invadia a divisória, como mostrou a renderização.
+      alturaFonte: 4.4,
+      negrito: true,
+      alinhamento: 'centro',
+      maiuscula: true,
+      ajustar: true,
+      linhas: 2,
+    },
+    {
+      id: 'divisoria-topo',
+      tipo: 'linha',
+      x: 2,
+      y: 11.5,
+      largura: 56,
+      espessura: 0.3,
+    },
+
+    // --- Coluna esquerda: o QR, grande ---
+    {
+      id: 'qr',
+      tipo: 'qrcode',
+      x: 3,
+      y: 13,
+      tamanho: 24,
+      conteudo: '{{url}}',
+    },
+
+    // --- Coluna direita: o que se conta ---
+    {
+      id: 'rotulo-inventario',
+      tipo: 'texto',
+      x: 29,
+      y: 13.5,
+      largura: 29,
+      altura: 3,
+      conteudo: 'INVENTÁRIO',
+      alturaFonte: 2.4,
+      negrito: true,
+      alinhamento: 'centro',
+    },
+    {
+      id: 'quantidade',
+      tipo: 'texto',
+      x: 29,
+      y: 17.5,
+      largura: 29,
+      altura: 8,
+      conteudo: '{{quantidade}}',
+      alturaFonte: 6.5,
+      negrito: true,
+      alinhamento: 'centro',
+      ajustar: true,
+    },
+    {
+      id: 'lote',
+      tipo: 'texto',
+      x: 29,
+      y: 26.5,
+      largura: 29,
+      altura: 3.2,
+      conteudo: 'Lote {{lote}}',
+      alturaFonte: 2.5,
+      alinhamento: 'centro',
+      ajustar: true,
+    },
+    {
+      id: 'codigo',
+      tipo: 'texto',
+      x: 29,
+      y: 31,
+      largura: 29,
+      altura: 4,
+      conteudo: '{{codigo}}',
+      alturaFonte: 3.4,
+      negrito: true,
+      alinhamento: 'centro',
+    },
+  ],
+}
+
 /** Substitui os marcadores `{{chave}}` pelos valores da etiqueta. */
 export function interpolar(texto: string, dados: DadosEtiqueta): string {
   const tabela = dados as unknown as Record<string, unknown>
