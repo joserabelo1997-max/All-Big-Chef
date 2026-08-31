@@ -276,3 +276,21 @@ export const TABELAS_SINCRONIZADAS = [
 ] as const
 
 export type TabelaSincronizada = (typeof TABELAS_SINCRONIZADAS)[number]
+
+/**
+ * Tabelas append-only: só recebem linhas novas, nunca edição nem exclusão.
+ *
+ * Ficam fora de `TABELAS_SINCRONIZADAS` porque descem por `created_at` e não
+ * por `updated_at` — elas não têm `updated_at`, já que nada nelas muda depois
+ * de gravado.
+ *
+ * Esta lista existe para que o motor de sync não tenha nome de tabela escrito à
+ * mão. Foi assim que `stock_movements` ficou subindo para o servidor sem nunca
+ * ser baixado de volta: a subida é genérica, mas a descida citava
+ * `label_events` diretamente. Com a lista, acrescentar uma tabela ao livro-razão
+ * obriga a incluí-la aqui — e o compilador cobra, porque a fila de envio em
+ * `lib/db.ts` deriva o tipo dela.
+ */
+export const TABELAS_APPEND_ONLY = ['label_events', 'stock_movements'] as const
+
+export type TabelaAppendOnly = (typeof TABELAS_APPEND_ONLY)[number]

@@ -1,4 +1,9 @@
-import { TABELAS_SINCRONIZADAS, type TabelaSincronizada } from '../../domain/types'
+import {
+  TABELAS_APPEND_ONLY,
+  TABELAS_SINCRONIZADAS,
+  type TabelaAppendOnly,
+  type TabelaSincronizada,
+} from '../../domain/types'
 import { db, type OperacaoPendente } from '../db'
 import { supabase } from '../supabase'
 
@@ -172,7 +177,11 @@ class MotorSync {
     for (const tabela of TABELAS_SINCRONIZADAS) {
       await this.baixarTabela(tabela, orgId)
     }
-    await this.baixarEventos(orgId)
+    // Os livros-razão vêm depois dos cadastros: um evento ou movimento aponta
+    // para a etiqueta ou o produto, e chegar antes deles quebraria a leitura.
+    for (const tabela of TABELAS_APPEND_ONLY) {
+      await this.baixarAppendOnly(tabela, orgId)
+    }
   }
 
   private async baixarTabela(tabela: TabelaSincronizada, orgId: string): Promise<void> {
@@ -205,32 +214,38 @@ class MotorSync {
   }
 
   /**
-   * Eventos são append-only, então paginamos por `created_at` e nunca
-   * sobrescrevemos: `bulkAdd` ignorando duplicatas preserva o que já existe
-   * localmente mesmo que o servidor reenvie.
+   * Baixa um livro-razão: eventos de etiqueta, movimentos de estoque.
+   *
+   * Pagina por `created_at`, e não por `updated_at`, porque essas linhas nunca
+   * são editadas — não existe `updated_at` nelas. O `bulkPut` é idempotente
+   * pela chave primária, então reenviar a mesma linha não duplica nada.
+   *
+   * Recebe a tabela por parâmetro em vez de citá-la: é o que garante que toda
+   * tabela de `TABELAS_APPEND_ONLY` desça, e não só a que alguém lembrou de
+   * escrever aqui.
    */
-  private async baixarEventos(orgId: string): Promise<void> {
+  private async baixarAppendOnly(tabela: TabelaAppendOnly, orgId: string): Promise<void> {
     if (!supabase) return
 
-    const marca = await db.marcas.get('label_events')
+    const marca = await db.marcas.get(tabela)
     let cursor = marca?.ate ?? '1970-01-01T00:00:00Z'
 
     for (;;) {
       const { data, error } = await supabase
-        .from('label_events')
+        .from(tabela)
         .select('*')
         .eq('org_id', orgId)
         .gt('created_at', cursor)
         .order('created_at', { ascending: true })
         .limit(TAMANHO_PAGINA)
 
-      if (error) throw new Error(`Falha ao baixar eventos: ${error.message}`)
+      if (error) throw new Error(`Falha ao baixar ${tabela}: ${error.message}`)
       if (!data || data.length === 0) break
 
-      await db.label_events.bulkPut(data)
+      await db.table(tabela).bulkPut(data)
 
       cursor = (data[data.length - 1] as { created_at: string }).created_at
-      await db.marcas.put({ tabela: 'label_events', ate: cursor })
+      await db.marcas.put({ tabela, ate: cursor })
 
       if (data.length < TAMANHO_PAGINA) break
     }

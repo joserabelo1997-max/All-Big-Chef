@@ -14,6 +14,7 @@ import type {
   Pasta,
   Produto,
   RequisicaoEstoque,
+  TabelaAppendOnly,
   TabelaSincronizada,
 } from '../domain/types'
 
@@ -31,7 +32,13 @@ import type {
 export interface OperacaoPendente {
   /** Sequencial: a ordem de aplicação precisa ser a ordem em que aconteceu. */
   seq?: number
-  tabela: TabelaSincronizada | 'label_events' | 'stock_movements'
+  /**
+   * Deriva das duas listas de `domain/types.ts`, e não de nomes soltos: assim
+   * não há como enfileirar o envio de uma tabela que nenhum caminho de descida
+   * conhece — foi exatamente esse o descuido que deixou `stock_movements`
+   * subindo sem nunca voltar.
+   */
+  tabela: TabelaSincronizada | TabelaAppendOnly
   /**
    * `upsert` cobre inserção e edição — o cliente já conhece o id, então não há
    * diferença prática entre criar e atualizar, e um upsert é idempotente
