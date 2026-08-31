@@ -3,6 +3,7 @@ import {
   differenceInCalendarDays,
   endOfDay,
   format,
+  getDay,
   isAfter,
   parseISO,
   startOfDay,
@@ -85,6 +86,60 @@ export function classificar(
     descricao: `vence em ${dias} dias`,
   }
 }
+
+/**
+ * Quantos dias à frente o aviso de casa fechada enxerga.
+ *
+ * Uma semana, e não mais: se a casa fecha todo domingo, olhar longe demais faria
+ * um domingo daqui a três semanas aparecer na tela de hoje, e a lista viraria
+ * ruído. Uma semana garante que cada dia fechado apareça exatamente uma vez,
+ * com a antecedência suficiente para agir na véspera.
+ */
+const JANELA_CASA_FECHADA = 7
+
+/**
+ * O produto vence num dia em que a casa está fechada?
+ *
+ * Um restaurante que fecha domingo e segunda precisa saber, no sábado, o que
+ * vence com a porta fechada — porque ninguém vai estar lá para consumir, doar
+ * ou descartar. Sem isso, a cozinha só descobre a perda na terça.
+ *
+ * `diasFechados` usa a convenção de `Date.getDay()`: 0 = domingo … 6 = sábado.
+ *
+ * O que já venceu fica de fora: aparece no contador de vencidos, e contar duas
+ * vezes o mesmo problema em duas caixas diferentes só confunde quem olha o
+ * painel.
+ */
+export function venceComACasaFechada(
+  validade: Date | string,
+  diasFechados: number[],
+  agora: Date = new Date(),
+): boolean {
+  if (diasFechados.length === 0) return false
+
+  const alvo = typeof validade === 'string' ? parseISO(validade) : validade
+
+  // Dias de calendário, como no resto do módulo: um produto que vence às 23h de
+  // domingo vence NO domingo, e não "daqui a 6,9 dias".
+  // `>=` e não `>`: sete dias contados a partir de hoje cobrem cada dia da
+  // semana UMA vez. Incluir o sétimo faria o mesmo domingo aparecer duas vezes
+  // na lista de quem olha num domingo.
+  const dias = differenceInCalendarDays(startOfDay(alvo), startOfDay(agora))
+  if (dias < 0 || dias >= JANELA_CASA_FECHADA) return false
+
+  return diasFechados.includes(getDay(alvo))
+}
+
+/** Nomes dos dias da semana, na ordem de `Date.getDay()`. */
+export const DIAS_DA_SEMANA = [
+  'Domingo',
+  'Segunda',
+  'Terça',
+  'Quarta',
+  'Quinta',
+  'Sexta',
+  'Sábado',
+] as const
 
 function descreverPassado(dias: number): string {
   const atraso = Math.abs(dias)

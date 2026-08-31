@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
 import { criarEtiqueta, criarEventoBaixa, dadosParaImpressao } from './labelData'
-import type { Fornecedor, Pasta, Produto } from './types'
+import { PADROES_PRODUTO, type Fornecedor, type Pasta, type Produto } from './types'
 
 const ORG = '11111111-1111-1111-1111-111111111111'
 const AGORA = new Date(2026, 7, 30, 14, 20)
 
 const produto: Produto = {
+  ...PADROES_PRODUTO,
   id: 'p1',
   org_id: ORG,
   nome: 'Creme de leite',

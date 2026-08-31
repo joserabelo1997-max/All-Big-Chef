@@ -2,13 +2,18 @@ import Dexie, { type EntityTable } from 'dexie'
 
 import type {
   Configuracoes,
+  ContagemEstoque,
   Etiqueta,
+  EtiquetaInventario,
   EventoEtiqueta,
   Fornecedor,
+  ItemContagem,
   MembroEquipe,
   ModeloSalvo,
+  MovimentoEstoque,
   Pasta,
   Produto,
+  RequisicaoEstoque,
   TabelaSincronizada,
 } from '../domain/types'
 
@@ -26,7 +31,7 @@ import type {
 export interface OperacaoPendente {
   /** Sequencial: a ordem de aplicação precisa ser a ordem em que aconteceu. */
   seq?: number
-  tabela: TabelaSincronizada | 'label_events'
+  tabela: TabelaSincronizada | 'label_events' | 'stock_movements'
   /**
    * `upsert` cobre inserção e edição — o cliente já conhece o id, então não há
    * diferença prática entre criar e atualizar, e um upsert é idempotente
@@ -57,6 +62,12 @@ export class BancoLocal extends Dexie {
   labels!: EntityTable<Etiqueta, 'id'>
   label_events!: EntityTable<EventoEtiqueta, 'id'>
   org_settings!: EntityTable<Configuracoes, 'org_id'>
+
+  stock_movements!: EntityTable<MovimentoEstoque, 'id'>
+  stock_requests!: EntityTable<RequisicaoEstoque, 'id'>
+  stock_counts!: EntityTable<ContagemEstoque, 'id'>
+  stock_count_items!: EntityTable<ItemContagem, 'id'>
+  inventory_tags!: EntityTable<EtiquetaInventario, 'id'>
   outbox!: EntityTable<OperacaoPendente, 'seq'>
   marcas!: EntityTable<MarcaSync, 'tabela'>
 
@@ -76,6 +87,20 @@ export class BancoLocal extends Dexie {
       org_settings: 'org_id',
       outbox: '++seq, tabela, registroId, criadoEm',
       marcas: 'tabela',
+    })
+
+    // Versão 2: módulo de estoque. Dexie migra sozinho as tabelas antigas —
+    // nenhum dado de etiqueta é tocado ao abrir esta versão.
+    this.version(2).stores({
+      // `[product_id+unidade]` porque toda consulta de saldo filtra os dois ao
+      // mesmo tempo, e kg e unidade são contagens independentes.
+      stock_movements:
+        'id, org_id, product_id, tipo, ocorrido_em, created_at, [product_id+unidade]',
+      stock_requests: 'id, org_id, product_id, status, updated_at, deleted_at',
+      stock_counts: 'id, org_id, status, updated_at',
+      stock_count_items: 'id, org_id, count_id, product_id, updated_at',
+      inventory_tags:
+        'id, org_id, product_id, short_code, status, updated_at, deleted_at',
     })
   }
 }
@@ -103,6 +128,54 @@ export async function salvarESincronizar<T extends { id: string }>(
       operacao: 'upsert',
       registroId: registro.id,
       dados: registro as unknown as Record<string, unknown>,
+      criadoEm: new Date().toISOString(),
+      tentativas: 0,
+    })
+  })
+}
+
+/**
+ * Registra um movimento de estoque e atualiza o saldo local.
+ *
+ * O saldo é recalculado somando o livro inteiro daquele produto, e não somando
+ * o delta do movimento novo. É mais caro e é o certo: o sync entrega movimentos
+ * fora de ordem e às vezes repetidos, e um acumulador incremental erraria em
+ * silêncio — um saldo errado só apareceria na contagem, semanas depois. É a
+ * mesma regra do gatilho no Postgres, para que os dois cheguem ao mesmo número.
+ */
+export async function registrarMovimento(movimento: MovimentoEstoque): Promise<void> {
+  await db.transaction('rw', db.stock_movements, db.products, db.outbox, async () => {
+    await db.stock_movements.add(movimento)
+
+    const doProduto = await db.stock_movements
+      .where('product_id')
+      .equals(movimento.product_id)
+      .toArray()
+
+    const somar = (unidade: 'kg' | 'un') =>
+      doProduto
+        .filter((m) => m.unidade === unidade)
+        .reduce(
+          (total, m) =>
+            total + (m.tipo === 'entrada' || m.tipo === 'ajuste' ? m.quantidade : -m.quantidade),
+          0,
+        )
+
+    const produto = await db.products.get(movimento.product_id)
+    if (produto) {
+      await db.products.put({
+        ...produto,
+        saldo_kg: somar('kg'),
+        saldo_un: somar('un'),
+        updated_at: new Date().toISOString(),
+      })
+    }
+
+    await db.outbox.add({
+      tabela: 'stock_movements',
+      operacao: 'upsert',
+      registroId: movimento.id,
+      dados: movimento as unknown as Record<string, unknown>,
       criadoEm: new Date().toISOString(),
       tentativas: 0,
     })

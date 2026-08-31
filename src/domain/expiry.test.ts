@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { calcularValidade, classificar, compararUrgencia } from './expiry'
+import {
+  calcularValidade,
+  classificar,
+  compararUrgencia,
+  venceComACasaFechada,
+} from './expiry'
 
 /** Data local, evitando a armadilha de `new Date('2026-08-30')` virar UTC. */
 function em(ano: number, mes: number, dia: number, hora = 12, minuto = 0): Date {
@@ -138,5 +143,66 @@ describe('compararUrgencia', () => {
     const a = classificar(em(2026, 8, 20, 23, 59), agora)
     const b = classificar(em(2026, 8, 28, 23, 59), agora)
     expect([b, a].sort(compararUrgencia)[0]).toBe(a)
+  })
+})
+
+describe('venceComACasaFechada', () => {
+  // Cenário do usuário: a casa fecha domingo e segunda.
+  const FECHA_DOM_SEG = [0, 1]
+  const sabado = em(2026, 8, 29, 10) // sábado, véspera do fechamento
+
+  it('acusa o que vence no domingo e na segunda em que a casa está fechada', () => {
+    expect(venceComACasaFechada(em(2026, 8, 30, 23, 59), FECHA_DOM_SEG, sabado)).toBe(true)
+    expect(venceComACasaFechada(em(2026, 8, 31, 23, 59), FECHA_DOM_SEG, sabado)).toBe(true)
+  })
+
+  it('ignora o que vence com a casa aberta', () => {
+    // Terça, quarta e sexta: tem gente na cozinha para resolver.
+    expect(venceComACasaFechada(em(2026, 9, 1, 23, 59), FECHA_DOM_SEG, sabado)).toBe(false)
+    expect(venceComACasaFechada(em(2026, 9, 2, 23, 59), FECHA_DOM_SEG, sabado)).toBe(false)
+    expect(venceComACasaFechada(em(2026, 9, 4, 23, 59), FECHA_DOM_SEG, sabado)).toBe(false)
+  })
+
+  it('não avisa nada quando a casa não fecha nenhum dia', () => {
+    expect(venceComACasaFechada(em(2026, 8, 30, 23, 59), [], sabado)).toBe(false)
+  })
+
+  it('conta em dias de calendário, não em janelas de 24 horas', () => {
+    // Sábado às 23h, vencendo domingo às 8h: menos de 24 horas, mas é o domingo
+    // fechado — que é o que importa para quem vai embora hoje.
+    const tarde = em(2026, 8, 29, 23, 30)
+    expect(venceComACasaFechada(em(2026, 8, 30, 8, 0), FECHA_DOM_SEG, tarde)).toBe(true)
+  })
+
+  it('deixa de fora o que já venceu', () => {
+    // Domingo passado. Já está no contador de vencidos; repetir aqui só duplica
+    // o mesmo problema em duas caixas do painel.
+    const terca = em(2026, 9, 1, 10)
+    expect(venceComACasaFechada(em(2026, 8, 30, 23, 59), FECHA_DOM_SEG, terca)).toBe(false)
+  })
+
+  it('mostra cada dia fechado uma única vez, mesmo olhando de dentro dele', () => {
+    // Olhando de um domingo fechado: hoje conta, o domingo seguinte (7 dias) não.
+    const domingo = em(2026, 8, 30, 10)
+    expect(venceComACasaFechada(em(2026, 8, 30, 23, 59), FECHA_DOM_SEG, domingo)).toBe(true)
+    expect(venceComACasaFechada(em(2026, 9, 6, 23, 59), FECHA_DOM_SEG, domingo)).toBe(false)
+  })
+
+  it('atravessa a virada de mês e de semana', () => {
+    // Quinta 03/09 olhando o domingo 06/09: três dias à frente, mês virado.
+    const quinta = em(2026, 9, 3, 10)
+    expect(venceComACasaFechada(em(2026, 9, 6, 23, 59), FECHA_DOM_SEG, quinta)).toBe(true)
+    expect(venceComACasaFechada(em(2026, 9, 7, 23, 59), FECHA_DOM_SEG, quinta)).toBe(true)
+  })
+
+  it('aceita a validade como texto ISO, que é como ela chega do banco', () => {
+    expect(
+      venceComACasaFechada(em(2026, 8, 30, 23, 59).toISOString(), FECHA_DOM_SEG, sabado),
+    ).toBe(true)
+  })
+
+  it('funciona com um único dia de fechamento', () => {
+    expect(venceComACasaFechada(em(2026, 8, 31, 23, 59), [1], sabado)).toBe(true)
+    expect(venceComACasaFechada(em(2026, 8, 30, 23, 59), [1], sabado)).toBe(false)
   })
 })

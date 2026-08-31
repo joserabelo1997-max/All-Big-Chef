@@ -1,3 +1,4 @@
+import type { Configuracoes } from '../domain/types'
 import { db } from './db'
 import { supabase } from './supabase'
 
@@ -13,17 +14,30 @@ export interface PreferenciasAlerta {
   diasAntes: number
   /** Horário do aviso diário, em HH:MM. */
   horario: string
+  /**
+   * Dias da semana em que a casa fecha: 0 = domingo … 6 = sábado.
+   *
+   * Alimenta o aviso "vence com a casa fechada" — o que vence enquanto a porta
+   * está fechada precisa ser resolvido na véspera, não no dia.
+   */
+  diasFechados: number[]
 }
 
 export const PREFERENCIAS_PADRAO: PreferenciasAlerta = {
   diasAntes: 2,
   horario: '08:00',
+  diasFechados: [],
 }
 
 export async function lerPreferencias(orgId: string): Promise<PreferenciasAlerta> {
   const salvas = await db.org_settings.get(orgId)
   return salvas
-    ? { diasAntes: salvas.alerta_dias_antes, horario: salvas.alerta_horario.slice(0, 5) }
+    ? {
+        diasAntes: salvas.alerta_dias_antes,
+        horario: salvas.alerta_horario.slice(0, 5),
+        // Registro gravado antes desta versão não tem o campo.
+        diasFechados: salvas.dias_fechados ?? [],
+      }
     : PREFERENCIAS_PADRAO
 }
 
@@ -34,10 +48,12 @@ export async function salvarPreferencias(
   const agora = new Date().toISOString()
   const anteriores = await db.org_settings.get(orgId)
 
-  const registro = {
+  const registro: Configuracoes = {
     org_id: orgId,
     alerta_dias_antes: preferencias.diasAntes,
     alerta_horario: `${preferencias.horario}:00`,
+    dias_fechados: preferencias.diasFechados,
+    mensagem_pedido: anteriores?.mensagem_pedido ?? null,
     default_template_id: anteriores?.default_template_id ?? null,
     printer_profile: anteriores?.printer_profile ?? null,
     created_at: anteriores?.created_at ?? agora,

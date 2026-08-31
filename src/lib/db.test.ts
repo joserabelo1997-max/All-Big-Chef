@@ -2,7 +2,12 @@ import 'fake-indexeddb/auto'
 
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import type { Etiqueta, EventoEtiqueta, Produto } from '../domain/types'
+import {
+  PADROES_PRODUTO,
+  type Etiqueta,
+  type EventoEtiqueta,
+  type Produto,
+} from '../domain/types'
 import { db, registrarEvento, salvarESincronizar } from './db'
 import { novoCodigoCurto, novoId } from './ids'
 
@@ -11,6 +16,7 @@ const ORG = '11111111-1111-1111-1111-111111111111'
 function produto(nome: string, dias = 3): Produto {
   const agora = new Date().toISOString()
   return {
+    ...PADROES_PRODUTO,
     id: novoId(),
     org_id: ORG,
     nome,

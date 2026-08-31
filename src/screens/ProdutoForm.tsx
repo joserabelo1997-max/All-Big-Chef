@@ -2,7 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
-import type { Produto } from '../domain/types'
+import { PADROES_PRODUTO, type Produto } from '../domain/types'
 import { db, salvarESincronizar } from '../lib/db'
 import { novoId } from '../lib/ids'
 import { useSessao } from '../lib/useSessao'
@@ -70,6 +70,10 @@ export function ProdutoForm() {
     const agora = new Date().toISOString()
 
     const registro: Produto = {
+      // Ao editar, as facetas existentes prevalecem; o padrão só preenche o que
+      // um produto antigo ainda não tem.
+      ...PADROES_PRODUTO,
+      ...existente,
       id: existente?.id ?? novoId(),
       org_id: orgId,
       folder_id: pastaId || null,

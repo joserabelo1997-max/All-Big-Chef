@@ -31,9 +31,17 @@ export interface Fornecedor extends Sincronizavel {
   nome: string
   cnpj?: string | null
   contato?: string | null
+  /** Só dígitos, com DDI e DDD — é o que o link do WhatsApp exige. */
+  telefone?: string | null
   observacoes?: string | null
   ativo: boolean
 }
+
+/** Como o produto é contado no estoque. */
+export type UnidadeEstoque = 'kg' | 'un' | 'ambos'
+
+/** Unidade de um movimento. `ambos` só existe no cadastro, nunca num lançamento. */
+export type UnidadeMovimento = 'kg' | 'un'
 
 export interface Produto extends Sincronizavel {
   folder_id?: string | null
@@ -45,6 +53,129 @@ export interface Produto extends Sincronizavel {
   sku?: string | null
   observacoes?: string | null
   ativo: boolean
+
+  /**
+   * Facetas. O catálogo é único: "Creme de leite" é cadastrado uma vez e pode
+   * participar das duas coisas. Papel toalha entra só no estoque; pré-preparo
+   * da casa, só em etiqueta.
+   */
+  gera_etiqueta: boolean
+  controla_estoque: boolean
+  unidade_estoque: UnidadeEstoque
+  estoque_minimo_kg: number
+  estoque_minimo_un: number
+
+  /** Lote impresso na embalagem do fabricante, usado como padrão ao imprimir. */
+  lote_atual?: string | null
+
+  /**
+   * Cache do saldo, mantido por gatilho no banco. A verdade está em
+   * `stock_movements` — isto existe só para listar rápido.
+   */
+  saldo_kg: number
+  saldo_un: number
+}
+
+/**
+ * Valores padrão das facetas de um produto novo.
+ *
+ * Existe para que acrescentar um campo ao produto não obrigue a repetir o mesmo
+ * padrão em cada tela e em cada teste — e para que o padrão seja UM só, em vez
+ * de divergir entre os pontos de criação.
+ */
+export const PADROES_PRODUTO = {
+  gera_etiqueta: true,
+  // Estoque é opt-in: quem só quer etiquetar não deve herdar um módulo inteiro
+  // que não pediu, com saldos zerados poluindo as telas.
+  controla_estoque: false,
+  unidade_estoque: 'un' as UnidadeEstoque,
+  estoque_minimo_kg: 0,
+  estoque_minimo_un: 0,
+  saldo_kg: 0,
+  saldo_un: 0,
+} satisfies Partial<Produto>
+
+export type TipoMovimento = 'entrada' | 'saida' | 'ajuste' | 'perda'
+
+/**
+ * Movimento de estoque. Append-only, como `EventoEtiqueta`.
+ *
+ * `quantidade` é sempre POSITIVA; o sinal vem do tipo. Guardar negativo
+ * convidaria a uma "entrada de -3" que ninguém sabe interpretar depois.
+ */
+export interface MovimentoEstoque {
+  id: string
+  org_id: string
+  product_id: string
+  tipo: TipoMovimento
+  quantidade: number
+  unidade: UnidadeMovimento
+  /** Lote e validade da entrada — alimentam a ordem de uso. */
+  lote?: string | null
+  validade?: string | null
+  /** Preço por unidade, só em entradas. Alimenta o valor médio ponderado. */
+  valor_unitario?: number | null
+  supplier_id?: string | null
+  member_id?: string | null
+  member_snapshot?: string | null
+  motivo?: string | null
+  ocorrido_em: string
+  created_at: string
+}
+
+export type StatusRequisicao = 'pendente' | 'aprovada' | 'recusada'
+
+export interface RequisicaoEstoque extends Sincronizavel {
+  product_id: string
+  quantidade: number
+  unidade: UnidadeMovimento
+  motivo?: string | null
+  solicitante_id?: string | null
+  solicitante_snapshot?: string | null
+  status: StatusRequisicao
+  decidido_por_id?: string | null
+  decidido_por_snapshot?: string | null
+  decidido_em?: string | null
+  /** Movimento gerado ao aprovar. Impede que aprovar duas vezes tire em dobro. */
+  movimento_id?: string | null
+}
+
+export interface ContagemEstoque extends Sincronizavel {
+  nome?: string | null
+  status: 'aberta' | 'finalizada'
+  member_id?: string | null
+  member_snapshot?: string | null
+  iniciada_em: string
+  finalizada_em?: string | null
+}
+
+export interface ItemContagem extends Sincronizavel {
+  count_id: string
+  product_id: string
+  unidade: UnidadeMovimento
+  /** O que o sistema achava que existia no momento da contagem. */
+  quantidade_sistema: number
+  quantidade_contada?: number | null
+}
+
+/**
+ * Etiqueta de inventário — deliberadamente SEM validade.
+ *
+ * Tipo separado de `Etiqueta` para que o compilador impeça a confusão: nada que
+ * espera uma etiqueta de validade aceita uma destas, e vice-versa. O QR aponta
+ * para `#/i/<uuid>`, não para `#/l/<uuid>`.
+ */
+export interface EtiquetaInventario extends Sincronizavel {
+  product_id?: string | null
+  produto_snapshot: string
+  short_code: string
+  quantidade?: number | null
+  unidade?: UnidadeMovimento | null
+  lote?: string | null
+  status: 'em_estoque' | 'consumida'
+  printed_by_id?: string | null
+  printed_by_snapshot?: string | null
+  printed_at: string
 }
 
 export interface MembroEquipe extends Sincronizavel {
@@ -52,6 +183,8 @@ export interface MembroEquipe extends Sincronizavel {
   cargo?: string | null
   pin_hash?: string | null
   ativo: boolean
+  /** Quem pode liberar uma requisição de retirada do estoque. */
+  pode_aprovar: boolean
 }
 
 export interface ModeloSalvo extends Sincronizavel {
@@ -118,6 +251,10 @@ export interface Configuracoes {
   org_id: string
   alerta_dias_antes: number
   alerta_horario: string
+  /** Dias em que a casa fecha: 0 = domingo … 6 = sábado. */
+  dias_fechados: number[]
+  /** Modelo da mensagem enviada ao fornecedor pelo WhatsApp. */
+  mensagem_pedido?: string | null
   default_template_id?: string | null
   printer_profile?: unknown
   created_at: string
@@ -132,6 +269,10 @@ export const TABELAS_SINCRONIZADAS = [
   'team_members',
   'label_templates',
   'labels',
+  'stock_requests',
+  'stock_counts',
+  'stock_count_items',
+  'inventory_tags',
 ] as const
 
 export type TabelaSincronizada = (typeof TABELAS_SINCRONIZADAS)[number]
