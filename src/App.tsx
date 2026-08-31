@@ -21,6 +21,7 @@ const tela = <T extends string>(
 const Alertas = tela(() => import('./screens/Alertas'), 'Alertas')
 const Configuracoes = tela(() => import('./screens/Configuracoes'), 'Configuracoes')
 const DarBaixa = tela(() => import('./screens/DarBaixa'), 'DarBaixa')
+const EditorEtiqueta = tela(() => import('./screens/EditorEtiqueta'), 'EditorEtiqueta')
 const DiagnosticoImpressora = tela(
   () => import('./screens/DiagnosticoImpressora'),
   'DiagnosticoImpressora',
@@ -65,10 +66,7 @@ export function App() {
           {/* Destino do QR impresso: abre direto a etiqueta escaneada. */}
           <Route path="l/:labelId" element={<Lazy><EtiquetaDetalhe /></Lazy>} />
 
-          <Route
-            path="editor"
-            element={<Lazy><EmBreve titulo="Editor de etiqueta" /></Lazy>}
-          />
+          <Route path="editor" element={<Lazy><EditorEtiqueta /></Lazy>} />
           <Route path="relatorios" element={<Lazy><EmBreve titulo="Relatórios" /></Lazy>} />
 
           <Route path="config" element={<Lazy><Configuracoes /></Lazy>} />

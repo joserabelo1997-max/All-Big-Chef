@@ -1,11 +1,12 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { criarEtiqueta, dadosParaImpressao } from '../domain/labelData'
 import type { Produto } from '../domain/types'
 import { db, registrarEvento, salvarESincronizar } from '../lib/db'
 import { membroSelecionado, selecionarMembro } from '../lib/sessao'
+import { modeloAtivo } from '../lib/modelos'
 import { useSessao } from '../lib/useSessao'
 import { imprimir } from '../printing/imprimir'
 import {
@@ -13,7 +14,7 @@ import {
   perfilEstaCompleto,
   type PerfilImpressora,
 } from '../printing/printerProfile'
-import { MODELO_PADRAO } from '../printing/template'
+import { MODELO_PADRAO, type ModeloEtiqueta } from '../printing/template'
 import { escolherImpressora, motivoIndisponivel } from '../printing/transport/ble'
 import { SeletorMembro } from '../ui/SeletorMembro'
 
@@ -42,10 +43,15 @@ export function Lote() {
   const [membroId, setMembroId] = useState<string | null>(membroSelecionado())
   const [membroNome, setMembroNome] = useState<string | null>(null)
 
+  const [modelo, setModelo] = useState<ModeloEtiqueta>(MODELO_PADRAO)
   const [ocupado, setOcupado] = useState(false)
   const [progresso, setProgresso] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const [sucesso, setSucesso] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (orgId) void modeloAtivo(orgId).then(setModelo)
+  }, [orgId])
 
   const perfil = lerPerfilLocal()
   const impressoraPronta = perfilEstaCompleto(perfil)
@@ -132,7 +138,7 @@ export function Lote() {
 
           await imprimir(
             aparelho,
-            MODELO_PADRAO,
+            modelo,
             dadosParaImpressao(etiqueta),
             perfil as PerfilImpressora,
           )

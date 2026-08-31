@@ -19,6 +19,7 @@ export function PreviaEtiqueta({
   dpi = 203,
   larguraExibicao = 320,
   monocromatico = true,
+  semBorda = false,
   className,
 }: {
   modelo: ModeloEtiqueta
@@ -27,6 +28,11 @@ export function PreviaEtiqueta({
   /** Largura em pixels de CSS. A resolução interna é sempre a da impressora. */
   larguraExibicao?: number
   monocromatico?: boolean
+  /**
+   * Remove a borda e a legenda. Usado pelo editor, onde os alvos de arrasto
+   * ficam sobrepostos ao canvas: 2 px de borda desalinhariam tudo.
+   */
+  semBorda?: boolean
   className?: string
 }) {
   const destino = useRef<HTMLCanvasElement>(null)
@@ -85,7 +91,9 @@ export function PreviaEtiqueta({
   return (
     <div className={className}>
       <div
-        className="relative overflow-hidden rounded-lg border-2 border-slate-300 bg-white shadow-sm"
+        className={`relative overflow-hidden bg-white ${
+          semBorda ? '' : 'rounded-lg border-2 border-slate-300 shadow-sm'
+        }`}
         style={{ width: larguraExibicao, height: alturaExibicao }}
       >
         <canvas
@@ -101,9 +109,11 @@ export function PreviaEtiqueta({
           </div>
         )}
       </div>
-      <p className="mt-1.5 text-xs text-slate-500">
-        {modelo.larguraMm} × {modelo.alturaMm} mm · {dpi} dpi
-      </p>
+      {!semBorda && (
+        <p className="mt-1.5 text-xs text-slate-500">
+          {modelo.larguraMm} × {modelo.alturaMm} mm · {dpi} dpi
+        </p>
+      )}
     </div>
   )
 }
