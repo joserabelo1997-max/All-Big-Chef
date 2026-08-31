@@ -103,8 +103,14 @@ export interface ModeloEtiqueta {
  * logo abaixo em corpo grande. Fornecedor, lote e responsável existem para a
  * auditoria, não para a operação, e ficam em corpo pequeno.
  *
- * O QR ocupa o canto inferior direito, a 12 mm — o suficiente para a câmera ler
- * rápido sem roubar espaço das datas.
+ * O layout é de DUAS COLUNAS: texto à esquerda em 37 mm, e uma coluna própria à
+ * direita só para o QR, com 17 mm.
+ *
+ * Esses 17 mm não são estética. A 203 dpi, um QR de 12 mm dava cerca de 2,6
+ * pontos por módulo — o limite do que um leitor tolera, e frágil demais para
+ * uma etiqueta que vai pegar gordura e condensação dentro da geladeira. A 17 mm
+ * são ~3,3 pontos por módulo, o dobro da área de leitura. É a diferença entre
+ * "lê quando o papel está limpo" e "lê sempre".
  */
 export const MODELO_PADRAO: ModeloEtiqueta = {
   id: 'padrao-60x40',
@@ -113,6 +119,7 @@ export const MODELO_PADRAO: ModeloEtiqueta = {
   alturaMm: 40,
   elementos: [
     {
+      // Ocupa a largura inteira, acima das duas colunas.
       id: 'produto',
       tipo: 'texto',
       x: 2,
@@ -120,7 +127,7 @@ export const MODELO_PADRAO: ModeloEtiqueta = {
       largura: 56,
       altura: 9,
       conteudo: '{{produto}}',
-      alturaFonte: 4.6,
+      alturaFonte: 4.4,
       negrito: true,
       alinhamento: 'centro',
       maiuscula: true,
@@ -131,32 +138,33 @@ export const MODELO_PADRAO: ModeloEtiqueta = {
       id: 'divisoria-topo',
       tipo: 'linha',
       x: 2,
-      y: 11.2,
+      y: 11,
       largura: 56,
       espessura: 0.3,
     },
+
+    // --- Coluna esquerda: x 2, largura 37 mm ---
     {
       id: 'rotulo-validade',
       tipo: 'texto',
       x: 2,
-      y: 12.4,
-      largura: 44,
-      altura: 3,
+      y: 12.6,
+      largura: 37,
+      altura: 2.8,
       conteudo: 'VALIDADE',
-      alturaFonte: 2.4,
+      alturaFonte: 2.2,
       negrito: true,
       alinhamento: 'esquerda',
     },
     {
-      // O maior elemento da etiqueta, de propósito.
+      // Continua sendo, de longe, o maior elemento da etiqueta: é o único dado
+      // que motiva uma ação de quem abre a geladeira.
       id: 'validade',
       tipo: 'texto',
       x: 2,
       y: 15.4,
-      // 42 mm, e não os 44 dos demais campos: o ajuste automático estica a data
-      // até o limite da caixa, e com 44 o último dígito encostava no QR.
-      largura: 42,
-      altura: 8,
+      largura: 37,
+      altura: 8.5,
       conteudo: '{{validade}}',
       alturaFonte: 7,
       negrito: true,
@@ -167,22 +175,23 @@ export const MODELO_PADRAO: ModeloEtiqueta = {
       id: 'manipulacao',
       tipo: 'texto',
       x: 2,
-      y: 24.2,
-      largura: 44,
-      altura: 3.4,
+      y: 25.6,
+      largura: 37,
+      altura: 3.2,
       conteudo: 'Manipulado: {{manipulacao}}',
-      alturaFonte: 2.8,
+      alturaFonte: 2.5,
       alinhamento: 'esquerda',
+      ajustar: true,
     },
     {
       id: 'fornecedor',
       tipo: 'texto',
       x: 2,
-      y: 28,
-      largura: 44,
-      altura: 3.4,
+      y: 29.4,
+      largura: 37,
+      altura: 3.2,
       conteudo: 'Forn.: {{fornecedor}}',
-      alturaFonte: 2.8,
+      alturaFonte: 2.5,
       alinhamento: 'esquerda',
       ajustar: true,
     },
@@ -190,33 +199,35 @@ export const MODELO_PADRAO: ModeloEtiqueta = {
       id: 'lote-responsavel',
       tipo: 'texto',
       x: 2,
-      y: 31.8,
-      largura: 44,
-      altura: 3.4,
+      y: 33.2,
+      largura: 37,
+      altura: 3.2,
       conteudo: 'Lote {{lote}} · {{responsavel}}',
-      alturaFonte: 2.8,
+      alturaFonte: 2.5,
       alinhamento: 'esquerda',
       ajustar: true,
     },
+
+    // --- Coluna direita: só o QR e o código sob ele ---
     {
       id: 'qr',
       tipo: 'qrcode',
-      x: 46.5,
-      y: 13.5,
-      tamanho: 12,
+      x: 40.5,
+      y: 13,
+      tamanho: 17,
       conteudo: '{{url}}',
     },
     {
       // Digitável quando o QR estiver amassado ou sujo de gordura — situação
-      // rotineira numa cozinha, não caso de borda.
+      // rotineira numa cozinha, não caso de borda. Centralizado sob o QR.
       id: 'codigo',
       tipo: 'texto',
-      x: 45.5,
-      y: 26,
-      largura: 14,
+      x: 40.5,
+      y: 31,
+      largura: 17,
       altura: 3,
       conteudo: '{{codigo}}',
-      alturaFonte: 2.6,
+      alturaFonte: 2.5,
       negrito: true,
       alinhamento: 'centro',
     },

@@ -100,6 +100,48 @@ describe('MODELO_PADRAO', () => {
     expect(validade.alturaFonte).toBe(maiorFonte)
   })
 
+  it('mantém o QR grande o bastante para ler sujo', () => {
+    // A 203 dpi, 12 mm davam ~2,6 pontos por módulo — o limite do que um leitor
+    // tolera. Abaixo de 16 mm a leitura volta a ficar frágil em etiqueta
+    // engordurada, e a regressão seria silenciosa: o QR continuaria "existindo".
+    const qr = MODELO_PADRAO.elementos.find((e) => e.id === 'qr')
+    expect(qr?.tipo).toBe('qrcode')
+    expect(qr && 'tamanho' in qr ? qr.tamanho : 0).toBeGreaterThanOrEqual(16)
+  })
+
+  it('não deixa o texto invadir a coluna do QR', () => {
+    // Num layout de duas colunas a sobreposição é invisível no código e só
+    // aparece com a etiqueta impressa na mão, com o QR ilegível por cima do
+    // texto.
+    const qr = MODELO_PADRAO.elementos.find((e) => e.id === 'qr')!
+    const inicioDoQr = qr.x
+
+    for (const el of MODELO_PADRAO.elementos) {
+      if (el.id === 'qr' || el.id === 'codigo') continue
+      if (!('largura' in el)) continue
+      // A faixa do produto e a divisória passam por cima, mas ficam ACIMA do QR.
+      const alturaEl = 'altura' in el ? el.altura : el.tipo === 'linha' ? el.espessura : 0
+      if (el.y + alturaEl <= qr.y) continue
+
+      expect(el.x + el.largura, `${el.id} invade a coluna do QR`).toBeLessThanOrEqual(
+        inicioDoQr,
+      )
+    }
+  })
+
+  it('aproveita a altura da etiqueta em vez de deixar sobra', () => {
+    // Uma versão anterior parava em 33 mm dos 40, desperdiçando papel útil que
+    // poderia estar dando corpo à validade.
+    const base = Math.max(
+      ...MODELO_PADRAO.elementos.map((e) => {
+        const altura = 'altura' in e ? e.altura : 'tamanho' in e ? e.tamanho : 0
+        return e.y + altura
+      }),
+    )
+    expect(base).toBeGreaterThan(35)
+    expect(base).toBeLessThanOrEqual(MODELO_PADRAO.alturaMm)
+  })
+
   it('não repete ids de elemento', () => {
     const ids = MODELO_PADRAO.elementos.map((e) => e.id)
     expect(new Set(ids).size).toBe(ids.length)

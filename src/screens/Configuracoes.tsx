@@ -23,12 +23,6 @@ const ITENS = [
     descricao: 'Desperdício, aproveitamento e exportação',
   },
   {
-    para: '/lote',
-    icone: '📚',
-    titulo: 'Impressão em lote',
-    descricao: 'Uma fila de etiquetas para o pré-preparo',
-  },
-  {
     para: '/config/alertas',
     icone: '🔔',
     titulo: 'Alertas de validade',

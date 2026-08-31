@@ -13,6 +13,7 @@ const ROTAS = [
   ['pastas', '#/pastas'],
   ['produtos', '#/produtos'],
   ['produto-novo', '#/produtos/novo'],
+  ['fila', '#/fila'],
   ['equipe', '#/config/equipe'],
   ['fornecedores', '#/config/fornecedores'],
   ['configuracoes', '#/config'],

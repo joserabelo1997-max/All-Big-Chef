@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import { lazy } from 'react'
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 
+import { ProvedorCarrinho } from './lib/useCarrinho'
 import { Layout } from './ui/Layout'
 // O painel é a primeira tela do turno e fica no pacote inicial: carregá-lo sob
 // demanda só acrescentaria espera onde ela é mais visível.
@@ -31,8 +32,7 @@ const Equipe = tela(() => import('./screens/Equipe'), 'Equipe')
 const EtiquetaDetalhe = tela(() => import('./screens/EtiquetaDetalhe'), 'EtiquetaDetalhe')
 const Etiquetas = tela(() => import('./screens/Etiquetas'), 'Etiquetas')
 const Fornecedores = tela(() => import('./screens/Fornecedores'), 'Fornecedores')
-const Imprimir = tela(() => import('./screens/Imprimir'), 'Imprimir')
-const Lote = tela(() => import('./screens/Lote'), 'Lote')
+const FilaImpressao = tela(() => import('./screens/FilaImpressao'), 'FilaImpressao')
 const Pastas = tela(() => import('./screens/Pastas'), 'Pastas')
 const ProdutoForm = tela(() => import('./screens/ProdutoForm'), 'ProdutoForm')
 const Produtos = tela(() => import('./screens/Produtos'), 'Produtos')
@@ -45,7 +45,8 @@ const Relatorios = tela(() => import('./screens/Relatorios'), 'Relatorios')
  */
 export function App() {
   return (
-    <HashRouter>
+    <ProvedorCarrinho>
+      <HashRouter>
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<Painel />} />
@@ -56,8 +57,8 @@ export function App() {
           <Route path="produtos/novo" element={<Lazy><ProdutoForm /></Lazy>} />
           <Route path="produtos/:produtoId" element={<Lazy><ProdutoForm /></Lazy>} />
 
-          <Route path="imprimir" element={<Lazy><Imprimir /></Lazy>} />
-          <Route path="lote" element={<Lazy><Lote /></Lazy>} />
+          {/* Alcançada apenas pela BarraCarrinho, nunca pela navegação. */}
+          <Route path="fila" element={<Lazy><FilaImpressao /></Lazy>} />
           <Route path="etiquetas" element={<Lazy><Etiquetas /></Lazy>} />
           <Route path="baixa" element={<Lazy><DarBaixa /></Lazy>} />
           {/* Destino do QR impresso: abre direto a etiqueta escaneada. */}
@@ -75,7 +76,8 @@ export function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
-    </HashRouter>
+      </HashRouter>
+    </ProvedorCarrinho>
   )
 }
 

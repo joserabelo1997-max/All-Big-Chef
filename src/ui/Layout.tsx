@@ -1,12 +1,19 @@
 import { NavLink, Outlet } from 'react-router-dom'
 
+import { BarraCarrinho } from './BarraCarrinho'
 import { IndicadorSync } from './IndicadorSync'
 
-/** Navegação inferior: alcance do polegar com o aparelho na mão, sem menu escondido. */
+/**
+ * Navegação inferior: alcance do polegar com o aparelho na mão, sem menu
+ * escondido.
+ *
+ * Não há aba "Imprimir". A impressão começa nos produtos e é concluída pela
+ * BarraCarrinho, que aparece só quando há algo na fila — em vez de uma aba fixa
+ * ocupando espaço mesmo quando não há nada para imprimir.
+ */
 const ABAS = [
   { para: '/', rotulo: 'Painel', icone: '🏠', fim: true },
   { para: '/pastas', rotulo: 'Produtos', icone: '📦', fim: false },
-  { para: '/imprimir', rotulo: 'Imprimir', icone: '🖨️', fim: false },
   { para: '/baixa', rotulo: 'Dar baixa', icone: '📷', fim: false },
   { para: '/config', rotulo: 'Ajustes', icone: '⚙️', fim: false },
 ] as const
@@ -16,9 +23,13 @@ export function Layout() {
     <div className="flex h-full flex-col">
       <IndicadorSync />
 
-      <main className="flex-1 overflow-y-auto pb-24">
+      {/* pb-40 e não pb-24: a barra do carrinho fica acima da navegação, e sem
+          essa folga ela cobriria o último item da lista. */}
+      <main className="flex-1 overflow-y-auto pb-40">
         <Outlet />
       </main>
+
+      <BarraCarrinho />
 
       <nav className="fixed inset-x-0 bottom-0 border-t border-slate-200 bg-white/95 backdrop-blur">
         <ul className="mx-auto flex max-w-2xl">

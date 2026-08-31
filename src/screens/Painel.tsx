@@ -91,8 +91,8 @@ export function Painel() {
       </div>
 
       <div className="mb-8 grid gap-3">
-        <Link to="/imprimir" className="btn-primario">
-          🖨️ Imprimir etiqueta
+        <Link to="/pastas" className="btn-primario">
+          🏷️ Etiquetar produtos
         </Link>
         <Link to="/baixa" className="btn-secundario">
           📷 Dar baixa
