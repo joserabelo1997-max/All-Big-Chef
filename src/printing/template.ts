@@ -13,6 +13,13 @@ export interface DadosEtiqueta {
   produto: string
   fornecedor: string
   pasta: string
+  /** Data em que o produto foi manipulado, no vocabulário da RDC 216. */
+  manipulacao: string
+  /**
+   * @deprecated Nome antigo de `manipulacao`. Mantido para que modelos já
+   * salvos por alguém, que ainda usem `{{abertura}}`, continuem imprimindo a
+   * data em vez de mostrar o marcador cru no papel.
+   */
   abertura: string
   validade: string
   lote: string
@@ -157,13 +164,13 @@ export const MODELO_PADRAO: ModeloEtiqueta = {
       ajustar: true,
     },
     {
-      id: 'abertura',
+      id: 'manipulacao',
       tipo: 'texto',
       x: 2,
       y: 24.2,
       largura: 44,
       altura: 3.4,
-      conteudo: 'Aberto: {{abertura}}',
+      conteudo: 'Manipulado: {{manipulacao}}',
       alturaFonte: 2.8,
       alinhamento: 'esquerda',
     },

@@ -127,9 +127,16 @@ describe('dadosParaImpressao', () => {
     expect(dadosParaImpressao(etiqueta).validade).toBe('02/09/2026')
   })
 
-  it('formata a abertura com hora', () => {
-    // Produto aberto de manhã e de tarde no mesmo dia precisa ser distinguível.
-    expect(dadosParaImpressao(etiqueta).abertura).toBe('30/08/26 14:20')
+  it('formata a manipulação só com a data, sem horário', () => {
+    // O horário roubava espaço de um campo lido de relance com o pote na mão.
+    // Ele continua registrado em `opened_at`, e aparece na tela e nos relatórios.
+    expect(dadosParaImpressao(etiqueta).manipulacao).toBe('30/08/2026')
+  })
+
+  it('mantém {{abertura}} funcionando para modelos antigos já salvos', () => {
+    // Sem esse apelido, um modelo salvo antes do renomeio imprimiria o texto
+    // "{{abertura}}" cru no papel em vez da data.
+    expect(dadosParaImpressao(etiqueta).abertura).toBe('30/08/2026')
   })
 
   it('usa travessão onde não há dado, em vez de deixar vazio', () => {

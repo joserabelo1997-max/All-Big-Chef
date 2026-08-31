@@ -35,7 +35,8 @@ const EXEMPLO: DadosEtiqueta = {
   produto: 'Molho bechamel de alho-poró',
   fornecedor: 'Laticínios São João',
   pasta: 'Molhos',
-  abertura: '30/08/26 14:20',
+  manipulacao: '30/08/2026',
+  abertura: '30/08/2026',
   validade: '02/09/2026',
   lote: 'L-4412',
   responsavel: 'Maria',
@@ -48,7 +49,7 @@ const EXEMPLO: DadosEtiqueta = {
 const MARCADORES: Array<{ chave: keyof DadosEtiqueta; rotulo: string }> = [
   { chave: 'produto', rotulo: 'Produto' },
   { chave: 'validade', rotulo: 'Validade' },
-  { chave: 'abertura', rotulo: 'Abertura' },
+  { chave: 'manipulacao', rotulo: 'Manipulação' },
   { chave: 'fornecedor', rotulo: 'Fornecedor' },
   { chave: 'lote', rotulo: 'Lote' },
   { chave: 'responsavel', rotulo: 'Responsável' },

@@ -1,5 +1,5 @@
 import type { Etiqueta, EventoEtiqueta, Fornecedor, Pasta, Produto } from './types'
-import { calcularValidade, formatarData, formatarDataCurta } from './expiry'
+import { calcularValidade, formatarData } from './expiry'
 import { novoCodigoCurto, novoId } from '../lib/ids'
 import type { DadosEtiqueta } from '../printing/template'
 
@@ -112,11 +112,12 @@ export function dadosParaImpressao(etiqueta: Etiqueta): DadosEtiqueta {
     produto: etiqueta.produto_snapshot,
     fornecedor: etiqueta.fornecedor_snapshot ?? '—',
     pasta: etiqueta.pasta_snapshot ?? '',
-    // A abertura leva hora porque produto aberto de manhã e de tarde no mesmo
-    // dia precisa ser distinguível numa conferência.
-    abertura: formatarDataCurta(etiqueta.opened_at),
-    // A validade sai só com a data: é o dado que a pessoa lê de relance com o
-    // pote na mão, e hora ali só rouba espaço do que importa.
+    // Só a data, sem horário: é o que a cozinha confere de relance, e a hora
+    // roubava espaço de um campo que precisa ser lido com o pote na mão. O
+    // horário exato continua registrado em `opened_at` e aparece na tela da
+    // etiqueta e nos relatórios, então a rastreabilidade não perde nada.
+    manipulacao: formatarData(etiqueta.opened_at),
+    abertura: formatarData(etiqueta.opened_at),
     validade: formatarData(etiqueta.expires_at),
     lote: etiqueta.lote ?? '—',
     responsavel: etiqueta.printed_by_snapshot ?? '—',

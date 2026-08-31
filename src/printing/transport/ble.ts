@@ -74,10 +74,15 @@ export function motivoIndisponivel(): string | null {
   const ehIOS = /iPad|iPhone|iPod/.test(ua) || (ua.includes('Mac') && 'ontouchend' in document)
 
   if (ehIOS) {
+    // Duas saídas, e a ordem importa: o beacio deixa a pessoa continuar no
+    // Safari — o mesmo navegador que instala o app e recebe os alertas —,
+    // enquanto o Bluefy obriga a alternar de navegador só para imprimir.
     return (
-      'O Safari do iPhone não permite acesso a Bluetooth. Para imprimir, abra ' +
-      'este mesmo endereço no navegador Bluefy (gratuito na App Store). O resto ' +
-      'do aplicativo continua funcionando normalmente aqui.'
+      'O Safari do iPhone não permite Bluetooth por padrão. Duas saídas: ' +
+      'instale a extensão gratuita "beacio" (App Store) e ative em Ajustes → ' +
+      'Apps → Safari → Extensões, e a impressão passa a funcionar aqui mesmo; ' +
+      'ou abra este endereço no navegador Bluefy. O resto do aplicativo ' +
+      'continua funcionando normalmente.'
     )
   }
 

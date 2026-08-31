@@ -63,14 +63,18 @@ outra.
 | Android (Chrome/Edge) | ✅ com cabo OTG | ✅ |
 | Linux, ChromeOS | ✅ | ✅ |
 | Windows, macOS | ⚠️ o driver do sistema costuma travar o acesso | ✅ |
-| iPhone / iPad | ❌ não existe no iOS | ✅ pelo **Bluefy** |
-| iPhone / iPad (Safari) | ❌ | ❌ |
+| iPhone / iPad | ❌ não existe no iOS | ✅ com **beacio** ou **Bluefy** |
 
 Para uma impressora de bancada ligada na tomada, **o cabo costuma ser a melhor
 escolha**: manda a etiqueta em uma fração do tempo e não depende de pareamento.
 
-No iPhone o arranjo é: **Safari instala o app e recebe os alertas de validade;
-Bluefy imprime.** É o mesmo app nos dois, sem build separado.
+**No iPhone o Safari imprime**, com a extensão gratuita
+[beacio](https://beacio.com/) — ela instala `navigator.bluetooth` no próprio
+Safari e não exige mudança nenhuma no app. Sem ela, o
+[Bluefy](https://apps.apple.com/us/app/bluefy-web-ble-browser/id1492822055)
+é a alternativa, num navegador à parte.
+Ver [`docs/IMPRESSORA.md`](docs/IMPRESSORA.md#imprimir-do-iphone-as-opções-da-melhor-para-a-pior)
+para as quatro opções comparadas.
 
 O restante do sistema — cadastro, painel de validades, leitura de QR, baixa de
 etiquetas, relatórios — funciona em qualquer navegador moderno, inclusive Safari.

@@ -43,6 +43,7 @@ const DADOS_TESTE: DadosEtiqueta = {
   produto: 'Teste de impressão',
   fornecedor: 'All Big Chef',
   pasta: 'Diagnóstico',
+  manipulacao: agora(),
   abertura: agora(),
   validade: emDias(3),
   lote: 'TESTE',

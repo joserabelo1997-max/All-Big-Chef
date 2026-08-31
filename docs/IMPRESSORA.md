@@ -53,13 +53,54 @@ Não dá para saber pela ficha do produto qual dos dois a impressora usa. Mas
 **isso deixou de ser um risco**, porque se o Bluetooth não funcionar, o cabo USB
 resolve — e o inverso também vale.
 
-No iPhone o Safari não implementa Bluetooth e a Apple não sinalizou intenção de
-implementar. A saída é o **Bluefy**, navegador gratuito que embarca a própria
-pilha Bluetooth: você abre o mesmo endereço do app dentro dele e imprime.
-Arranjo recomendado no iPhone: **Safari** para instalar o app na tela de início e
-receber os alertas de validade; **Bluefy** para imprimir.
-
 O endereço precisa ser HTTPS. Abrir o arquivo direto do disco não funciona.
+
+## Imprimir do iPhone: as opções, da melhor para a pior
+
+O Safari não implementa Bluetooth nativamente e a Apple não sinalizou intenção
+de implementar. Mas isso **não** significa que o iPhone esteja fora — há quatro
+caminhos, e o primeiro resolve sem trocar de navegador.
+
+### 1. beacio — extensão do Safari (recomendado, grátis)
+
+O [**beacio**](https://beacio.com/) é uma extensão do Safari com aplicativo
+companheiro que instala `navigator.bluetooth` no próprio Safari, ligando à
+CoreBluetooth do iOS. Declara 92 de 93 pontos de conformidade com a
+especificação W3C, e **não exige nenhuma alteração no nosso código** — o app
+simplesmente passa a enxergar Bluetooth.
+
+É a melhor opção porque elimina o malabarismo de dois navegadores: o mesmo
+Safari instala o app, recebe os alertas de validade e imprime.
+
+Como ativar: instale o app beacio da App Store e habilite em
+**Ajustes → Apps → Safari → Extensões**, marcando "Permitir sempre" para o
+endereço do All Big Chef.
+
+### 2. Bluefy — navegador separado (grátis)
+
+O [**Bluefy**](https://apps.apple.com/us/app/bluefy-web-ble-browser/id1492822055)
+é um navegador que embarca a própria pilha Bluetooth. Funciona bem, mas obriga a
+abrir o app dentro dele para imprimir, enquanto os alertas continuam vindo pelo
+Safari. Boa alternativa se o beacio não funcionar no seu aparelho.
+
+### 3. Cabo USB num Android ou computador da bancada
+
+Se houver qualquer Android ou PC na cozinha, ele vira a estação de impressão por
+cabo, e o iPhone segue usado para consultar, dar baixa e receber alertas. Não
+custa nada se o aparelho já existe.
+
+### 4. Aplicativo nativo próprio
+
+Empacotar este mesmo app com Capacitor e um plugin BLE nativo. Funciona, mas
+custa uma conta de desenvolvedor Apple (US$ 99/ano), exige um Mac com Xcode e
+cria um segundo artefato para manter. Só vale se um dia você quiser o app
+publicado na App Store com ícone próprio.
+
+### O que NÃO funciona, para não perder tempo
+
+- **AirPrint** — esta impressora não tem Wi-Fi nem suporte a AirPrint.
+- **Atalhos (Shortcuts) do iOS** — não acessam GATT de Bluetooth.
+- **WebUSB no iPhone** — não existe no iOS, em nenhum navegador.
 
 ### Teste rápido que antecipa a resposta
 

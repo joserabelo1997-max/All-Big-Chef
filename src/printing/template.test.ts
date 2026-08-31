@@ -7,6 +7,7 @@ const DADOS: DadosEtiqueta = {
   produto: 'Creme de leite',
   fornecedor: 'Laticínios São João',
   pasta: 'Laticínios',
+  manipulacao: '30/08/2026',
   abertura: '30/08/2026',
   validade: '02/09/2026',
   lote: 'L-4412',
@@ -66,7 +67,7 @@ describe('MODELO_PADRAO', () => {
 
   it('traz todos os campos que a etiqueta precisa mostrar', () => {
     const texto = JSON.stringify(MODELO_PADRAO.elementos)
-    for (const campo of ['produto', 'fornecedor', 'abertura', 'validade', 'url', 'codigo']) {
+    for (const campo of ['produto', 'fornecedor', 'manipulacao', 'validade', 'url', 'codigo']) {
       expect(texto).toContain(`{{${campo}}}`)
     }
   })
