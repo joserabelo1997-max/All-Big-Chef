@@ -15,7 +15,14 @@ const CHROMIUM = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'
 
 mkdirSync(SAIDA, { recursive: true })
 
-const navegador = await chromium.launch({ executablePath: CHROMIUM })
+// Em ambientes com proxy de saída (como o desta sessão), o Chromium precisa ser
+// avisado — ele não herda as variáveis HTTPS_PROXY do shell como o curl faz.
+const PROXY = process.env.HTTPS_PROXY || process.env.HTTP_PROXY
+
+const navegador = await chromium.launch({
+  executablePath: CHROMIUM,
+  ...(PROXY ? { proxy: { server: PROXY } } : {}),
+})
 const pagina = await navegador.newPage({ viewport: { width: 412, height: 900 } })
 
 const erros = []
