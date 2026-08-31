@@ -45,11 +45,7 @@ export async function salvarPreferencias(
   orgId: string,
   preferencias: PreferenciasAlerta,
 ): Promise<void> {
-  const agora = new Date().toISOString()
-  const anteriores = await db.org_settings.get(orgId)
-
-  const registro: Configuracoes = {
-    org_id: orgId,
+  await gravar(orgId, (anteriores, agora) => ({
     alerta_dias_antes: preferencias.diasAntes,
     alerta_horario: `${preferencias.horario}:00`,
     dias_fechados: preferencias.diasFechados,
@@ -57,14 +53,49 @@ export async function salvarPreferencias(
     default_template_id: anteriores?.default_template_id ?? null,
     printer_profile: anteriores?.printer_profile ?? null,
     created_at: anteriores?.created_at ?? agora,
+  }))
+}
+
+/** Modelo da mensagem enviada ao fornecedor pelo WhatsApp. */
+export async function salvarMensagemPedido(orgId: string, modelo: string): Promise<void> {
+  await gravar(orgId, (anteriores, agora) => ({
+    alerta_dias_antes: anteriores?.alerta_dias_antes ?? PREFERENCIAS_PADRAO.diasAntes,
+    alerta_horario: anteriores?.alerta_horario ?? `${PREFERENCIAS_PADRAO.horario}:00`,
+    dias_fechados: anteriores?.dias_fechados ?? [],
+    // Texto vazio volta ao modelo padrão em vez de gravar uma mensagem em
+    // branco, que abriria o WhatsApp sem nada escrito.
+    mensagem_pedido: modelo.trim() || null,
+    default_template_id: anteriores?.default_template_id ?? null,
+    printer_profile: anteriores?.printer_profile ?? null,
+    created_at: anteriores?.created_at ?? agora,
+  }))
+}
+
+/**
+ * Grava o registro único de configurações, local e remotamente.
+ *
+ * Configurações não passam pela outbox: são um registro único por organização,
+ * sem ordem a preservar, e perder a réplica remota de uma preferência é
+ * irrelevante perto de manter a fila de etiquetas simples.
+ */
+async function gravar(
+  orgId: string,
+  montar: (
+    anteriores: Configuracoes | undefined,
+    agora: string,
+  ) => Omit<Configuracoes, 'org_id' | 'updated_at'>,
+): Promise<void> {
+  const agora = new Date().toISOString()
+  const anteriores = await db.org_settings.get(orgId)
+
+  const registro: Configuracoes = {
+    org_id: orgId,
+    ...montar(anteriores, agora),
     updated_at: agora,
   }
 
   await db.org_settings.put(registro)
 
-  // Configurações não passam pela outbox: são um registro único por
-  // organização, sem ordem a preservar, e perder a réplica remota de uma
-  // preferência é irrelevante perto de manter a fila de etiquetas simples.
   if (supabase) {
     await supabase.from('org_settings').upsert(registro, { onConflict: 'org_id' })
   }

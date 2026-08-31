@@ -1,14 +1,17 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 
+import { salvarMensagemPedido } from '../lib/configuracoes'
 import { db, salvarESincronizar } from '../lib/db'
 import { novoId } from '../lib/ids'
 import { useSessao } from '../lib/useSessao'
+import { MENSAGEM_PADRAO } from '../lib/whatsapp'
 
 /** Fornecedores. Alimentam o campo `{{fornecedor}}` da etiqueta. */
 export function Fornecedores() {
   const { orgId, carregando } = useSessao()
   const [nome, setNome] = useState('')
+  const [telefone, setTelefone] = useState('')
   const [contato, setContato] = useState('')
 
   const fornecedores = useLiveQuery(
@@ -35,6 +38,7 @@ export function Fornecedores() {
       id: novoId(),
       org_id: orgId,
       nome: limpo,
+      telefone: telefone.trim() || null,
       contato: contato.trim() || null,
       ativo: true,
       created_at: agora,
@@ -42,6 +46,7 @@ export function Fornecedores() {
     })
 
     setNome('')
+    setTelefone('')
     setContato('')
   }
 
@@ -62,7 +67,8 @@ export function Fornecedores() {
     <div className="mx-auto max-w-2xl px-4 py-6">
       <h1 className="text-2xl font-bold">Fornecedores</h1>
       <p className="mb-5 text-sm text-slate-500">
-        Sai impresso na etiqueta e serve à rastreabilidade.
+        Sai impresso na etiqueta, serve à rastreabilidade e recebe o pedido de
+        reposição pelo WhatsApp.
       </p>
 
       <div className="cartao mb-6 p-4">
@@ -76,6 +82,22 @@ export function Fornecedores() {
           onChange={(e) => setNome(e.target.value)}
           placeholder="Ex.: Laticínios São João"
         />
+        <label className="rotulo" htmlFor="telefone-fornecedor">
+          WhatsApp <span className="font-normal">(opcional)</span>
+        </label>
+        <input
+          id="telefone-fornecedor"
+          className="campo mb-1"
+          type="tel"
+          inputMode="tel"
+          value={telefone}
+          onChange={(e) => setTelefone(e.target.value)}
+          placeholder="(11) 98765-4321"
+        />
+        <p className="mb-3 text-xs text-slate-500">
+          É por aqui que o pedido de reposição abre. Pode digitar com
+          parênteses e traço.
+        </p>
         <label className="rotulo" htmlFor="contato-fornecedor">
           Contato <span className="font-normal">(opcional)</span>
         </label>
@@ -109,8 +131,10 @@ export function Fornecedores() {
             >
               <span className="flex-1">
                 <span className="block font-semibold">{f.nome}</span>
-                {f.contato && (
-                  <span className="block text-sm text-slate-500">{f.contato}</span>
+                {(f.telefone || f.contato) && (
+                  <span className="block text-sm text-slate-500">
+                    {[f.telefone, f.contato].filter(Boolean).join(' · ')}
+                  </span>
                 )}
               </span>
               {f.ativo && (
@@ -125,6 +149,46 @@ export function Fornecedores() {
           ))}
         </ul>
       )}
+
+      <ModeloDaMensagem orgId={orgId} />
     </div>
+  )
+}
+
+/**
+ * Modelo da mensagem de pedido.
+ *
+ * Editável porque cada casa fala com o fornecedor de um jeito, e uma mensagem
+ * genérica escrita pelo sistema soa como robô — o que atrapalha justamente na
+ * relação que faz o pedido chegar rápido.
+ */
+function ModeloDaMensagem({ orgId }: { orgId: string | null }) {
+  const salvo = useLiveQuery(
+    async () => (orgId ? db.org_settings.get(orgId) : undefined),
+    [orgId],
+  )
+
+  const [texto, setTexto] = useState<string | null>(null)
+  const atual = texto ?? salvo?.mensagem_pedido ?? MENSAGEM_PADRAO
+
+  return (
+    <section className="mt-8">
+      <h2 className="rotulo" id="rotulo-mensagem">
+        Mensagem do pedido
+      </h2>
+      <textarea
+        className="campo py-3 font-mono text-sm"
+        rows={5}
+        aria-labelledby="rotulo-mensagem"
+        value={atual}
+        onChange={(e) => setTexto(e.target.value)}
+        onBlur={() => orgId && texto != null && void salvarMensagemPedido(orgId, texto)}
+      />
+      <p className="mt-1 text-xs text-slate-500">
+        <code>{'{{fornecedor}}'}</code> vira o nome e <code>{'{{itens}}'}</code> vira a
+        lista do que está faltando. O app só abre o WhatsApp com o texto pronto —
+        o pedido não é registrado.
+      </p>
+    </section>
   )
 }

@@ -16,6 +16,7 @@ export function Equipe() {
   const { orgId, carregando } = useSessao()
   const [nome, setNome] = useState('')
   const [cargo, setCargo] = useState('')
+  const [podeAprovar, setPodeAprovar] = useState(false)
 
   const equipe = useLiveQuery(
     async () => {
@@ -43,12 +44,24 @@ export function Equipe() {
       nome: limpo,
       cargo: cargo.trim() || null,
       ativo: true,
+      pode_aprovar: podeAprovar,
       created_at: agora,
       updated_at: agora,
     })
 
     setNome('')
     setCargo('')
+    setPodeAprovar(false)
+  }
+
+  async function alternarAprovacao(id: string) {
+    const membro = await db.team_members.get(id)
+    if (!membro) return
+    await salvarESincronizar('team_members', {
+      ...membro,
+      pode_aprovar: !membro.pode_aprovar,
+      updated_at: new Date().toISOString(),
+    })
   }
 
   async function alternarAtivo(id: string) {
@@ -95,6 +108,24 @@ export function Equipe() {
           onKeyDown={(e) => e.key === 'Enter' && void adicionar()}
           placeholder="Ex.: Cozinheira"
         />
+        <label htmlFor="aprova-membro" className="mb-3 flex min-h-toque cursor-pointer items-start gap-3">
+          <input
+            id="aprova-membro"
+            type="checkbox"
+            className="mt-0.5 h-6 w-6 shrink-0 rounded border-2 border-slate-300 accent-slate-900"
+            checked={podeAprovar}
+            onChange={(e) => setPodeAprovar(e.target.checked)}
+          />
+          <span>
+            <span className="block font-semibold leading-tight">
+              Pode liberar retirada do estoque
+            </span>
+            <span className="block text-xs text-slate-500">
+              Aprova requisições — inclusive as próprias, para o preparo não
+              parar esperando alguém aparecer.
+            </span>
+          </span>
+        </label>
         <button
           className="btn-primario w-full"
           onClick={() => void adicionar()}
@@ -118,13 +149,29 @@ export function Equipe() {
               }`}
             >
               <span className="flex-1">
-                <span className="block font-semibold">{membro.nome}</span>
+                <span className="block font-semibold">
+                  {membro.nome}
+                  {membro.pode_aprovar && (
+                    <span
+                      className="ml-2 rounded bg-slate-900 px-1.5 py-0.5 align-middle text-[10px] font-bold uppercase text-white"
+                      title="Pode liberar retirada do estoque"
+                    >
+                      libera
+                    </span>
+                  )}
+                </span>
                 {membro.cargo && (
                   <span className="block text-sm text-slate-500">{membro.cargo}</span>
                 )}
+                <button
+                  className="mt-1 text-xs font-semibold text-slate-500 underline"
+                  onClick={() => void alternarAprovacao(membro.id)}
+                >
+                  {membro.pode_aprovar ? 'Tirar permissão de liberar' : 'Deixar liberar estoque'}
+                </button>
               </span>
               <button
-                className="min-h-[2.75rem] rounded-lg border-2 border-slate-200 px-3 text-sm font-semibold"
+                className="min-h-[2.75rem] shrink-0 rounded-lg border-2 border-slate-200 px-3 text-sm font-semibold"
                 onClick={() => void alternarAtivo(membro.id)}
               >
                 {membro.ativo ? 'Desativar' : 'Reativar'}

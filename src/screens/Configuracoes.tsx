@@ -26,19 +26,19 @@ const ITENS = [
     para: '/config/alertas',
     icone: '🔔',
     titulo: 'Alertas de validade',
-    descricao: 'Quantos dias antes avisar, e a que horas',
+    descricao: 'Dias de antecedência, horário e dias em que a casa fecha',
   },
   {
     para: '/config/equipe',
     icone: '👥',
     titulo: 'Equipe',
-    descricao: 'Quem aparece na lista ao imprimir e ao escanear',
+    descricao: 'Quem imprime, quem escaneia e quem libera o estoque',
   },
   {
     para: '/config/fornecedores',
     icone: '🚚',
     titulo: 'Fornecedores',
-    descricao: 'Cadastro usado no campo da etiqueta',
+    descricao: 'Contato, WhatsApp e a mensagem do pedido',
   },
 ] as const
 

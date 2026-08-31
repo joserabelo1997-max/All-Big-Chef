@@ -31,6 +31,9 @@ const DiagnosticoImpressora = tela(
 const Equipe = tela(() => import('./screens/Equipe'), 'Equipe')
 const Estoque = tela(() => import('./screens/Estoque'), 'Estoque')
 const EstoqueItem = tela(() => import('./screens/EstoqueItem'), 'EstoqueItem')
+const Contagem = tela(() => import('./screens/Contagem'), 'Contagem')
+const Repor = tela(() => import('./screens/Repor'), 'Repor')
+const Requisicoes = tela(() => import('./screens/Requisicoes'), 'Requisicoes')
 const EtiquetaDetalhe = tela(() => import('./screens/EtiquetaDetalhe'), 'EtiquetaDetalhe')
 const Etiquetas = tela(() => import('./screens/Etiquetas'), 'Etiquetas')
 const Fornecedores = tela(() => import('./screens/Fornecedores'), 'Fornecedores')
@@ -70,6 +73,11 @@ export function App() {
           <Route path="l/:labelId" element={<Lazy><EtiquetaDetalhe /></Lazy>} />
 
           <Route path="estoque" element={<Lazy><Estoque /></Lazy>} />
+          {/* As telas fixas vêm antes de `:produtoId`, senão "repor" seria
+              interpretado como o id de um produto. */}
+          <Route path="estoque/repor" element={<Lazy><Repor /></Lazy>} />
+          <Route path="estoque/requisicoes" element={<Lazy><Requisicoes /></Lazy>} />
+          <Route path="estoque/contagem" element={<Lazy><Contagem /></Lazy>} />
           <Route path="estoque/:produtoId" element={<Lazy><EstoqueItem /></Lazy>} />
 
           <Route path="editor" element={<Lazy><EditorEtiqueta /></Lazy>} />

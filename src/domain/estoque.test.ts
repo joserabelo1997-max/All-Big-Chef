@@ -168,6 +168,43 @@ describe('lotesPorValidade', () => {
     expect(lotesPorValidade(movimentos, 'kg').map((l) => l.lote)).toEqual(['A', 'C', 'B'])
   })
 
+  it('desempata dois lotes sem validade pelo mais antigo', () => {
+    // Sem esse desempate a ordem sairia de como a lista de movimentos chegou —
+    // e o sync entrega do mais recente para o mais antigo, que é o inverso do
+    // que a cozinha deve usar.
+    const antigo = mov({
+      quantidade: 5,
+      lote: 'A',
+      ocorrido_em: new Date(2026, 6, 1).toISOString(),
+    })
+    const novo = mov({
+      quantidade: 5,
+      lote: 'B',
+      ocorrido_em: new Date(2026, 7, 1).toISOString(),
+    })
+
+    expect(lotesPorValidade([novo, antigo], 'kg').map((l) => l.lote)).toEqual(['A', 'B'])
+    expect(lotesPorValidade([antigo, novo], 'kg').map((l) => l.lote)).toEqual(['A', 'B'])
+  })
+
+  it('consome primeiro o lote mais antigo quando nenhum tem validade', () => {
+    const antigo = mov({
+      quantidade: 5,
+      lote: 'A',
+      ocorrido_em: new Date(2026, 6, 1).toISOString(),
+    })
+    const novo = mov({
+      quantidade: 5,
+      lote: 'B',
+      ocorrido_em: new Date(2026, 7, 1).toISOString(),
+    })
+    const saida = mov({ tipo: 'saida', quantidade: 5 })
+
+    expect(lotesPorValidade([novo, antigo, saida], 'kg').map((l) => l.restanteEstimado)).toEqual([
+      0, 5,
+    ])
+  })
+
   it('joga lote sem validade para o fim da fila', () => {
     // Mandar usar primeiro aquilo cuja validade ninguém sabe é o contrário do
     // controle que o sistema existe para dar.

@@ -97,6 +97,11 @@ export interface LoteEmEstoque {
   lote: string | null
   /** Data de validade da embalagem, em ISO. */
   validade: string | null
+  /**
+   * Quando este lote entrou pela primeira vez. Desempata dois lotes sem
+   * validade: sem isso, a ordem dependeria de como a lista de movimentos chegou.
+   */
+  primeiraEntrada: string
   /** Quanto entrou neste lote, somando as entradas com o mesmo lote e validade. */
   entrada: number
   /**
@@ -134,10 +139,12 @@ export function lotesPorValidade(
     const atual = porChave.get(chave)
     if (atual) {
       atual.entrada = arredondar(atual.entrada + m.quantidade)
+      if (m.ocorrido_em < atual.primeiraEntrada) atual.primeiraEntrada = m.ocorrido_em
     } else {
       porChave.set(chave, {
         lote: m.lote ?? null,
         validade: m.validade ?? null,
+        primeiraEntrada: m.ocorrido_em,
         entrada: arredondar(m.quantidade),
         restanteEstimado: 0,
       })
@@ -145,7 +152,12 @@ export function lotesPorValidade(
   }
 
   const lotes = [...porChave.values()].sort((a, b) => {
-    if (a.validade === b.validade) return 0
+    // Sem validade em nenhum dos dois, cai para o mais antigo primeiro: é o
+    // melhor palpite que existe, e não pode depender da ordem em que os
+    // movimentos chegaram pelo sync.
+    if (a.validade === b.validade) {
+      return a.primeiraEntrada < b.primeiraEntrada ? -1 : a.primeiraEntrada > b.primeiraEntrada ? 1 : 0
+    }
     if (!a.validade) return 1
     if (!b.validade) return -1
     return a.validade < b.validade ? -1 : 1
