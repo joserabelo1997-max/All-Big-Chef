@@ -25,6 +25,12 @@ ordem**, um de cada vez:
    e clique em **Run**.
 2. Abra outra query, cole [`../supabase/migrations/0002_rls_e_status.sql`](../supabase/migrations/0002_rls_e_status.sql)
    e **Run**.
+3. Abra outra query, cole [`../supabase/migrations/0004_estoque.sql`](../supabase/migrations/0004_estoque.sql)
+   e **Run**. É o módulo de estoque: movimentos, requisições, contagem e
+   etiquetas de inventário.
+
+A `0003_agendamento_push.sql` fica para depois — ela é o agendamento das
+notificações e tem passo próprio, mais abaixo.
 
 Cada um deve terminar com *Success. No rows returned*. Se aparecer erro, pare e
 me mostre a mensagem — não rode o próximo.

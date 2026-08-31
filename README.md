@@ -1,7 +1,12 @@
 # All Big Chef
 
-PWA de gestão de cozinha profissional. **Módulo 1**: etiquetagem de produtos com
-impressão Bluetooth, controle de validade, alertas e rastreabilidade.
+PWA de gestão de cozinha profissional.
+
+- **Módulo 1** — etiquetagem de produtos com impressão Bluetooth, controle de
+  validade, alertas e rastreabilidade.
+- **Módulo 2** — controle de estoque: entrada e saída, saldo, estoque mínimo,
+  requisição com aprovação, contagem de inventário e pedido ao fornecedor pelo
+  WhatsApp.
 
 Cozinhas precisam etiquetar todo produto retirado da embalagem original (prática
 exigida pela RDC 216/ANVISA) com nome, fornecedor, data de abertura e validade.
@@ -21,6 +26,11 @@ qualquer produto.
 | **Rastreabilidade** | QR único por etiqueta, baixa por câmera ou código digitado, trilha de auditoria imutável |
 | **Editor** | Arrastar e soltar os campos da etiqueta, com prévia real |
 | **Relatórios** | Desperdício por produto e pasta, aproveitamento, exportação CSV para fiscalização |
+| **Estoque** | Entrada, saída, perda e ajuste; saldo derivado do livro-razão; kg e unidade como contagens independentes |
+| **Reposição** | Aviso de estoque mínimo e pedido agrupado por fornecedor, aberto no WhatsApp com a mensagem pronta |
+| **Requisições** | Retirada do estoque com liberação do responsável — quem tem permissão libera a própria |
+| **Contagem** | Conferência do físico; a diferença vira movimento registrado, nunca sobrescrita do saldo |
+| **Inventário** | Etiqueta com QR único para o que a casa produz e guarda, só para contagem — sem data de validade |
 | **Offline** | Tudo acima funciona sem internet; sincroniza sozinho ao reconectar |
 
 ## Instalar no celular
@@ -63,8 +73,13 @@ comportamento de ponta a ponta — úteis depois de mexer no pipeline de impress
 ou nas telas:
 
 ```bash
-node scripts/verificar-etiqueta.mjs   # renderiza a etiqueta e decodifica o QR de volta
+node scripts/verificar-etiqueta.mjs   # renderiza as duas etiquetas e decodifica o QR de volta
 node scripts/verificar-fluxo.mjs      # cadastro -> etiqueta -> baixa -> busca por código
+node scripts/verificar-carrinho.mjs   # somar etiquetas atravessando pastas
+node scripts/verificar-leitor.mjs     # leitor de código de barras em modo teclado
+node scripts/verificar-cadastro.mjs   # fornecedor na hora, lote no produto, dia fechado
+node scripts/verificar-estoque.mjs    # entrada -> requisição -> aprovação -> repor -> contagem
+node scripts/verificar-inventario.mjs # etiqueta de contagem sem conflito com a de validade
 node scripts/verificar-painel.mjs     # classificação e ordenação por validade
 node scripts/verificar-editor.mjs     # arrasta um campo e confere a persistência
 node scripts/verificar-relatorios.mjs # números do relatório e formato do CSV
@@ -104,6 +119,20 @@ direto do disco não funciona.
 > **Rolo de etiqueta:** o modelo padrão é desenhado para **60 × 40 mm**. Se sua
 > impressora veio com rolos de outro tamanho, compre um 60 × 40 (medida comum e
 > barata) ou ajuste o tamanho no diagnóstico e reposicione os campos no editor.
+
+## As duas etiquetas
+
+O app imprime **duas** etiquetas 60 × 40 mm, e elas não se misturam:
+
+| | Etiqueta de validade | Etiqueta de inventário |
+| --- | --- | --- |
+| Para quê | Produto retirado da embalagem original | O que a casa produziu e guardou |
+| Traz data | Manipulação e validade | **Nenhuma** — serve só à contagem |
+| QR aponta para | `#/l/<id>` | `#/i/<id>` |
+| Ao escanear | Tela de validade, com consumir e descartar | Tela de contagem, com em estoque e consumida |
+
+A separação está no endereço dentro do QR, e não num campo lido depois: uma
+leitura nunca cai na tela errada, sem depender de ninguém conferir.
 
 ## Documentação
 
