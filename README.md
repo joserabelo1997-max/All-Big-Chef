@@ -23,6 +23,25 @@ qualquer produto.
 | **Relatórios** | Desperdício por produto e pasta, aproveitamento, exportação CSV para fiscalização |
 | **Offline** | Tudo acima funciona sem internet; sincroniza sozinho ao reconectar |
 
+## Instalar no celular
+
+O app fica em **https://joserabelo1997-max.github.io/All-Big-Chef/**
+
+**iPhone e iPad** — abra o endereço no **Safari** (Chrome e Firefox no iPhone não
+instalam PWA), toque em **Compartilhar** (o quadrado com a seta para cima) e
+escolha **Adicionar à Tela de Início**.
+
+**Android** — abra no Chrome e toque em **Instalar aplicativo**, no menu de três
+pontos. Alguns aparelhos oferecem sozinho, num aviso na parte de baixo da tela.
+
+> **No iPhone, instalar não é opcional se você quer os alertas de validade.** O
+> iOS só entrega notificação para PWA instalado pelo Safari (iOS 16.4+). Aberto
+> como aba comum, o aviso de vencimento **não chega** — por isso cada pessoa da
+> equipe precisa instalar no próprio celular.
+
+Para também **imprimir pelo iPhone**, veja
+[`docs/IMPRESSORA.md`](docs/IMPRESSORA.md#imprimir-do-iphone-as-opções-da-melhor-para-a-pior).
+
 ## Como rodar
 
 ```bash
