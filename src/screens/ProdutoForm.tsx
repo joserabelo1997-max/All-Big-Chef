@@ -2,7 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
-import { PADROES_PRODUTO, type Produto } from '../domain/types'
+import { PADROES_PRODUTO, type Produto, type UnidadeEstoque } from '../domain/types'
 import { db, salvarESincronizar } from '../lib/db'
 import { resolverFornecedor } from '../lib/fornecedores'
 import { novoId } from '../lib/ids'
@@ -34,6 +34,21 @@ export function ProdutoForm() {
   const [observacoes, setObservacoes] = useState('')
   const [salvando, setSalvando] = useState(false)
 
+  /**
+   * As duas facetas. O catálogo é ÚNICO: "Creme de leite" é cadastrado uma vez
+   * e pode participar das duas coisas. Papel toalha entra só no estoque;
+   * pré-preparo da casa, só em etiqueta.
+   */
+  const [geraEtiqueta, setGeraEtiqueta] = useState<boolean>(PADROES_PRODUTO.gera_etiqueta)
+  const [controlaEstoque, setControlaEstoque] = useState<boolean>(
+    PADROES_PRODUTO.controla_estoque,
+  )
+  const [unidadeEstoque, setUnidadeEstoque] = useState<UnidadeEstoque>(
+    PADROES_PRODUTO.unidade_estoque,
+  )
+  const [minimoKg, setMinimoKg] = useState(0)
+  const [minimoUn, setMinimoUn] = useState(0)
+
   useEffect(() => {
     if (!existente) return
     setNome(existente.nome)
@@ -42,6 +57,11 @@ export function ProdutoForm() {
     setLote(existente.lote_atual ?? '')
     setUnidade(existente.unidade ?? '')
     setObservacoes(existente.observacoes ?? '')
+    setGeraEtiqueta(existente.gera_etiqueta ?? PADROES_PRODUTO.gera_etiqueta)
+    setControlaEstoque(existente.controla_estoque ?? PADROES_PRODUTO.controla_estoque)
+    setUnidadeEstoque(existente.unidade_estoque ?? PADROES_PRODUTO.unidade_estoque)
+    setMinimoKg(existente.estoque_minimo_kg ?? 0)
+    setMinimoUn(existente.estoque_minimo_un ?? 0)
   }, [existente])
 
   // O nome do fornecedor vem numa busca à parte porque o produto guarda o id.
@@ -88,6 +108,11 @@ export function ProdutoForm() {
       // Lote da embalagem do fabricante: fica no produto porque não é valor
       // livre por impressão — muda quando muda o lote comprado.
       lote_atual: lote.trim() || null,
+      gera_etiqueta: geraEtiqueta,
+      controla_estoque: controlaEstoque,
+      unidade_estoque: unidadeEstoque,
+      estoque_minimo_kg: minimoKg,
+      estoque_minimo_un: minimoUn,
       unidade: unidade.trim() || null,
       observacoes: observacoes.trim() || null,
       ativo: true,
@@ -135,6 +160,108 @@ export function ProdutoForm() {
           />
         </div>
 
+        {/* As duas facetas, lado a lado. Um produto pode ser as duas coisas:
+            "Creme de leite" é etiquetado E contado. Papel toalha só é contado;
+            um pré-preparo da casa só é etiquetado. */}
+        <fieldset className="cartao p-4">
+          <legend className="rotulo px-1">Este produto</legend>
+          <Faceta
+            id="gera-etiqueta"
+            marcada={geraEtiqueta}
+            aoMudar={setGeraEtiqueta}
+            titulo="Gera etiqueta de validade"
+            descricao="Aparece na lista de etiquetar e vai para a impressora."
+          />
+          <Faceta
+            id="controla-estoque"
+            marcada={controlaEstoque}
+            aoMudar={setControlaEstoque}
+            titulo="Controla estoque"
+            descricao="Entra e sai do estoque, com saldo e aviso de mínimo."
+          />
+          {!geraEtiqueta && !controlaEstoque && (
+            <p className="mt-2 text-xs text-amber-700">
+              Sem nenhuma das duas, o produto não aparece em lugar nenhum.
+            </p>
+          )}
+        </fieldset>
+
+        {controlaEstoque && (
+          <fieldset className="cartao p-4">
+            <legend className="rotulo px-1">Como é contado</legend>
+
+            <div className="mb-3 flex flex-wrap gap-2">
+              {(
+                [
+                  ['un', 'Por unidade'],
+                  ['kg', 'Por quilo'],
+                  ['ambos', 'Os dois'],
+                ] as const
+              ).map(([valor, rotulo]) => (
+                <button
+                  key={valor}
+                  type="button"
+                  onClick={() => setUnidadeEstoque(valor)}
+                  className={[
+                    'min-h-toque rounded-xl border-2 px-4 font-semibold transition',
+                    unidadeEstoque === valor
+                      ? 'border-slate-900 bg-slate-900 text-white'
+                      : 'border-slate-200 bg-white',
+                  ].join(' ')}
+                >
+                  {rotulo}
+                </button>
+              ))}
+            </div>
+
+            {unidadeEstoque === 'ambos' && (
+              <p className="mb-3 text-xs text-slate-500">
+                Duas contagens independentes, sem conversão entre elas: o saco
+                fechado e o granel são coisas diferentes na prateleira.
+              </p>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              {unidadeEstoque !== 'un' && (
+                <div>
+                  <label className="rotulo" htmlFor="minimo-kg">
+                    Mínimo (kg)
+                  </label>
+                  <input
+                    id="minimo-kg"
+                    type="number"
+                    min={0}
+                    step="0.001"
+                    className="campo"
+                    value={minimoKg}
+                    onChange={(e) => setMinimoKg(Math.max(0, Number(e.target.value)))}
+                  />
+                </div>
+              )}
+              {unidadeEstoque !== 'kg' && (
+                <div>
+                  <label className="rotulo" htmlFor="minimo-un">
+                    Mínimo (unidades)
+                  </label>
+                  <input
+                    id="minimo-un"
+                    type="number"
+                    min={0}
+                    className="campo"
+                    value={minimoUn}
+                    onChange={(e) => setMinimoUn(Math.max(0, Number(e.target.value)))}
+                  />
+                </div>
+              )}
+            </div>
+            <p className="mt-1 text-xs text-slate-500">
+              Zero significa “não acompanhe”. Chegar no mínimo já é hora de
+              pedir — ele é o ponto de pedido, não o ponto de acabar.
+            </p>
+          </fieldset>
+        )}
+
+        {geraEtiqueta && (
         <div>
           <label className="rotulo" htmlFor="dias">
             Validade após abertura
@@ -169,6 +296,7 @@ export function ProdutoForm() {
             calculado.
           </p>
         </div>
+        )}
 
         <div>
           <label className="rotulo" htmlFor="pasta">
@@ -252,5 +380,41 @@ export function ProdutoForm() {
         )}
       </div>
     </div>
+  )
+}
+
+/**
+ * Uma faceta do produto, como interruptor.
+ *
+ * Caixa de seleção grande e a linha inteira clicável: quem cadastra está de
+ * avental, muitas vezes com a mão molhada, e um alvo de toque pequeno erra.
+ */
+function Faceta({
+  id,
+  marcada,
+  aoMudar,
+  titulo,
+  descricao,
+}: {
+  id: string
+  marcada: boolean
+  aoMudar: (valor: boolean) => void
+  titulo: string
+  descricao: string
+}) {
+  return (
+    <label htmlFor={id} className="flex min-h-toque cursor-pointer items-start gap-3 py-2">
+      <input
+        id={id}
+        type="checkbox"
+        className="mt-0.5 h-6 w-6 shrink-0 rounded border-2 border-slate-300 accent-slate-900"
+        checked={marcada}
+        onChange={(e) => aoMudar(e.target.checked)}
+      />
+      <span>
+        <span className="block font-semibold leading-tight">{titulo}</span>
+        <span className="block text-xs text-slate-500">{descricao}</span>
+      </span>
+    </label>
   )
 }

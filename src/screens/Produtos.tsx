@@ -43,6 +43,10 @@ export function Produtos() {
       const todos = await db.products.where('org_id').equals(orgId).toArray()
       return todos
         .filter((p) => !p.deleted_at && p.ativo)
+        // Só o que gera etiqueta: papel toalha é controlado no estoque e não
+        // tem o que fazer aqui. `!== false` porque produto cadastrado antes das
+        // facetas não tem o campo, e todos eles eram de etiqueta.
+        .filter((p) => p.gera_etiqueta !== false)
         .filter((p) => !pastaId || p.folder_id === pastaId)
         .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
     },

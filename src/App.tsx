@@ -29,6 +29,8 @@ const DiagnosticoImpressora = tela(
   'DiagnosticoImpressora',
 )
 const Equipe = tela(() => import('./screens/Equipe'), 'Equipe')
+const Estoque = tela(() => import('./screens/Estoque'), 'Estoque')
+const EstoqueItem = tela(() => import('./screens/EstoqueItem'), 'EstoqueItem')
 const EtiquetaDetalhe = tela(() => import('./screens/EtiquetaDetalhe'), 'EtiquetaDetalhe')
 const Etiquetas = tela(() => import('./screens/Etiquetas'), 'Etiquetas')
 const Fornecedores = tela(() => import('./screens/Fornecedores'), 'Fornecedores')
@@ -66,6 +68,9 @@ export function App() {
           <Route path="baixa" element={<Navigate to="/escanear" replace />} />
           {/* Destino do QR impresso: abre direto a etiqueta escaneada. */}
           <Route path="l/:labelId" element={<Lazy><EtiquetaDetalhe /></Lazy>} />
+
+          <Route path="estoque" element={<Lazy><Estoque /></Lazy>} />
+          <Route path="estoque/:produtoId" element={<Lazy><EstoqueItem /></Lazy>} />
 
           <Route path="editor" element={<Lazy><EditorEtiqueta /></Lazy>} />
           <Route path="relatorios" element={<Lazy><Relatorios /></Lazy>} />
