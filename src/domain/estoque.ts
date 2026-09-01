@@ -92,6 +92,41 @@ export function valorMedioPago(
   return Math.round((gasto / quantidade) * 10_000) / 10_000
 }
 
+/**
+ * Quanto se costuma pedir deste produto de cada vez.
+ *
+ * Serve para preencher a quantidade na tela do pedido. A alternativa — "o que
+ * falta para voltar ao mínimo" — pede sempre de menos: repõe só até o ponto de
+ * pedido, e a cozinha volta ao mínimo na semana seguinte. Ninguém compra assim;
+ * compra-se a caixa, o saco, o que costuma durar.
+ *
+ * Média SIMPLES das entradas, e não ponderada por quantidade. Aqui cada entrada
+ * é uma compra, e o que se quer saber é o tamanho típico de uma compra —
+ * ponderar por quantidade daria peso maior justamente às compras grandes,
+ * inflando a média para cima de tudo o que já foi pedido. (Em `valorMedioPago`
+ * é o contrário, e por isso lá é ponderada: preço de compra grande realmente
+ * pesa mais no custo.)
+ *
+ * Só `entrada` conta. Ajuste e perda não são compras, e saída é o oposto.
+ *
+ * `null` sem nenhuma entrada — na primeira compra não há história, e a tela cai
+ * no que falta para o mínimo. "Sem informação" e "pede zero" são coisas
+ * diferentes.
+ */
+export function mediaDoPedido(
+  movimentos: MovimentoEstoque[],
+  unidade: UnidadeMovimento,
+): number | null {
+  const compras = movimentos.filter(
+    (m) => m.tipo === 'entrada' && m.unidade === unidade && m.quantidade > 0,
+  )
+
+  if (compras.length === 0) return null
+
+  const total = compras.reduce((soma, m) => soma + m.quantidade, 0)
+  return arredondar(total / compras.length)
+}
+
 /** Um lote que entrou no estoque, com o que se estima restar dele. */
 export interface LoteEmEstoque {
   lote: string | null

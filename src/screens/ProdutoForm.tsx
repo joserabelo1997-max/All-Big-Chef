@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
 import { PADROES_PRODUTO, type Produto, type UnidadeEstoque } from '../domain/types'
+import { normalizarCodigoBarras } from '../lib/codigoBarras'
 import { db, salvarESincronizar } from '../lib/db'
 import { resolverFornecedor } from '../lib/fornecedores'
 import { novoId } from '../lib/ids'
@@ -35,6 +36,15 @@ export function ProdutoForm() {
   const [salvando, setSalvando] = useState(false)
 
   /**
+   * Código de barras da embalagem. Já vem preenchido quando a pessoa chegou
+   * aqui bipando um produto que ainda não existia — decorar treze dígitos para
+   * redigitá-los seria o oposto de bipar.
+   */
+  const [codigoBarras, setCodigoBarras] = useState(
+    () => normalizarCodigoBarras(params.get('codigo') ?? ''),
+  )
+
+  /**
    * As duas facetas. O catálogo é ÚNICO: "Creme de leite" é cadastrado uma vez
    * e pode participar das duas coisas. Papel toalha entra só no estoque;
    * pré-preparo da casa, só em etiqueta.
@@ -57,6 +67,7 @@ export function ProdutoForm() {
     setLote(existente.lote_atual ?? '')
     setUnidade(existente.unidade ?? '')
     setObservacoes(existente.observacoes ?? '')
+    setCodigoBarras(existente.codigo_barras ?? '')
     setGeraEtiqueta(existente.gera_etiqueta ?? PADROES_PRODUTO.gera_etiqueta)
     setControlaEstoque(existente.controla_estoque ?? PADROES_PRODUTO.controla_estoque)
     setUnidadeEstoque(existente.unidade_estoque ?? PADROES_PRODUTO.unidade_estoque)
@@ -114,6 +125,7 @@ export function ProdutoForm() {
       estoque_minimo_kg: minimoKg,
       estoque_minimo_un: minimoUn,
       unidade: unidade.trim() || null,
+      codigo_barras: codigoBarras || null,
       observacoes: observacoes.trim() || null,
       ativo: true,
       created_at: existente?.created_at ?? agora,
@@ -158,6 +170,38 @@ export function ProdutoForm() {
             placeholder="Ex.: Creme de leite"
             autoFocus={!editando}
           />
+        </div>
+
+        <div>
+          <label className="rotulo" htmlFor="codigo-barras">
+            Código de barras <span className="font-normal">(opcional)</span>
+          </label>
+          <div className="flex gap-2">
+            <input
+              id="codigo-barras"
+              className="campo flex-1 font-mono"
+              inputMode="numeric"
+              autoComplete="off"
+              value={codigoBarras}
+              onChange={(e) => setCodigoBarras(normalizarCodigoBarras(e.target.value))}
+              placeholder="Toque aqui e bipe a embalagem"
+            />
+            {codigoBarras && (
+              <button
+                type="button"
+                className="min-h-toque shrink-0 rounded-xl border-2 border-slate-200 px-4 font-semibold"
+                onClick={() => setCodigoBarras('')}
+              >
+                Limpar
+              </button>
+            )}
+          </div>
+          <p className="mt-1 text-xs text-slate-500">
+            {/* Com o cursor dentro do campo, o leitor digita ali em vez de o app
+                sequestrar a leitura — é o comportamento de `useLeitorHid`. */}
+            Com o cursor no campo, o leitor escreve direto aqui. Depois disso,
+            bipar a embalagem abre este produto no estoque.
+          </p>
         </div>
 
         {/* As duas facetas, lado a lado. Um produto pode ser as duas coisas:

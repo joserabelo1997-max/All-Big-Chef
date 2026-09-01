@@ -1,6 +1,12 @@
 import type { Configuracoes } from '../domain/types'
 import { db } from './db'
 import { supabase } from './supabase'
+import {
+  ABERTURA_PADRAO,
+  converterMensagemAntiga,
+  FECHO_PADRAO,
+  type TextosDoPedido,
+} from './whatsapp'
 
 /**
  * Preferências do restaurante.
@@ -50,25 +56,61 @@ export async function salvarPreferencias(
     alerta_horario: `${preferencias.horario}:00`,
     dias_fechados: preferencias.diasFechados,
     mensagem_pedido: anteriores?.mensagem_pedido ?? null,
+    pedido_abertura: anteriores?.pedido_abertura ?? null,
+    pedido_fecho: anteriores?.pedido_fecho ?? null,
     default_template_id: anteriores?.default_template_id ?? null,
     printer_profile: anteriores?.printer_profile ?? null,
     created_at: anteriores?.created_at ?? agora,
   }))
 }
 
-/** Modelo da mensagem enviada ao fornecedor pelo WhatsApp. */
-export async function salvarMensagemPedido(orgId: string, modelo: string): Promise<void> {
+/**
+ * Os dois textos da mensagem de pedido.
+ *
+ * Enquanto nada tiver sido salvo no formato novo, converte a mensagem antiga —
+ * e se ela estiver corrompida (um `{{itens}}` que virou outra coisa), volta ao
+ * padrão em vez de herdar um texto que mandava pedido sem produto.
+ */
+export async function lerTextosDoPedido(orgId: string): Promise<TextosDoPedido> {
+  const salvas = await db.org_settings.get(orgId)
+
+  // `null` e string vazia caem no padrão; só um texto de verdade vale. Assim
+  // apagar as duas caixas devolve o padrão em vez de mandar mensagem em branco.
+  if (salvas?.pedido_abertura || salvas?.pedido_fecho) {
+    return {
+      abertura: salvas.pedido_abertura ?? '',
+      fecho: salvas.pedido_fecho ?? '',
+    }
+  }
+
+  return converterMensagemAntiga(salvas?.mensagem_pedido)
+}
+
+export async function salvarTextosDoPedido(
+  orgId: string,
+  textos: TextosDoPedido,
+): Promise<void> {
   await gravar(orgId, (anteriores, agora) => ({
     alerta_dias_antes: anteriores?.alerta_dias_antes ?? PREFERENCIAS_PADRAO.diasAntes,
     alerta_horario: anteriores?.alerta_horario ?? `${PREFERENCIAS_PADRAO.horario}:00`,
     dias_fechados: anteriores?.dias_fechados ?? [],
-    // Texto vazio volta ao modelo padrão em vez de gravar uma mensagem em
-    // branco, que abriria o WhatsApp sem nada escrito.
-    mensagem_pedido: modelo.trim() || null,
+    // A mensagem antiga é deixada como está: já foi convertida, e apagá-la
+    // tiraria a saída de um aparelho que ainda não abriu a versão nova.
+    mensagem_pedido: anteriores?.mensagem_pedido ?? null,
+    pedido_abertura: textos.abertura.trim() || null,
+    pedido_fecho: textos.fecho.trim() || null,
     default_template_id: anteriores?.default_template_id ?? null,
     printer_profile: anteriores?.printer_profile ?? null,
     created_at: anteriores?.created_at ?? agora,
   }))
+}
+
+/** Volta os dois textos ao padrão de fábrica. */
+export async function restaurarTextosDoPedido(orgId: string): Promise<void> {
+  await salvarTextosDoPedido(orgId, {
+    abertura: ABERTURA_PADRAO,
+    fecho: FECHO_PADRAO,
+  })
 }
 
 /**

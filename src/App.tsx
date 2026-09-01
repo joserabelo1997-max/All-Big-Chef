@@ -42,6 +42,10 @@ const ImprimirInventario = tela(
   'ImprimirInventario',
 )
 const Repor = tela(() => import('./screens/Repor'), 'Repor')
+const PedidoFornecedor = tela(
+  () => import('./screens/PedidoFornecedor'),
+  'PedidoFornecedor',
+)
 const Requisicoes = tela(() => import('./screens/Requisicoes'), 'Requisicoes')
 const EtiquetaDetalhe = tela(() => import('./screens/EtiquetaDetalhe'), 'EtiquetaDetalhe')
 const Etiquetas = tela(() => import('./screens/Etiquetas'), 'Etiquetas')
@@ -85,6 +89,10 @@ export function App() {
           {/* As telas fixas vêm antes de `:produtoId`, senão "repor" seria
               interpretado como o id de um produto. */}
           <Route path="estoque/repor" element={<Lazy><Repor /></Lazy>} />
+          <Route
+            path="estoque/repor/:fornecedorId"
+            element={<Lazy><PedidoFornecedor /></Lazy>}
+          />
           <Route path="estoque/requisicoes" element={<Lazy><Requisicoes /></Lazy>} />
           <Route path="estoque/contagem" element={<Lazy><Contagem /></Lazy>} />
           <Route path="estoque/:produtoId" element={<Lazy><EstoqueItem /></Lazy>} />

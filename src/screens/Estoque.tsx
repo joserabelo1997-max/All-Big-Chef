@@ -1,10 +1,11 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { situacaoDeEstoque } from '../domain/estoque'
 import type { Produto } from '../domain/types'
-import { db } from '../lib/db'
+import { formatarCodigoBarras } from '../lib/codigoBarras'
+import { db, salvarESincronizar } from '../lib/db'
 import { useSessao } from '../lib/useSessao'
 import { PendenciasEstoque } from '../ui/PendenciasEstoque'
 
@@ -17,18 +18,43 @@ import { PendenciasEstoque } from '../ui/PendenciasEstoque'
  */
 export function Estoque() {
   const { orgId, carregando } = useSessao()
+  const navegar = useNavigate()
+  const [params] = useSearchParams()
   const [busca, setBusca] = useState('')
   const [soFaltando, setSoFaltando] = useState(false)
+
+  // Código de barras bipado que ainda não é de ninguém. O leitor manda para cá
+  // em vez de para uma tela de escolha própria: a lista e a busca do estoque já
+  // são o jeito de achar um produto, e duplicá-las seria manter duas.
+  const vincular = params.get('vincular')
 
   const produtos = useLiveQuery(
     async () => {
       if (!orgId) return []
       const todos = await db.products.where('org_id').equals(orgId).toArray()
-      return todos.filter((p) => !p.deleted_at && p.ativo && p.controla_estoque)
+      const vivos = todos.filter((p) => !p.deleted_at && p.ativo)
+      // Vinculando, mostra TODOS os produtos: o item que a pessoa acabou de
+      // bipar pode ainda não controlar estoque, e escondê-lo deixaria ela presa
+      // sem entender por quê.
+      return vincular ? vivos : vivos.filter((p) => p.controla_estoque)
     },
-    [orgId],
+    [orgId, vincular],
     [],
   )
+
+  /** Grava o código bipado no produto tocado e segue para ele. */
+  async function vincularAo(produto: Produto) {
+    if (!vincular) return
+    await salvarESincronizar('products', {
+      ...produto,
+      codigo_barras: vincular,
+      // Bipar um produto é dizer que ele é contado. Deixar a chave desligada
+      // aqui faria o item sumir da lista logo depois de vinculado.
+      controla_estoque: true,
+      updated_at: new Date().toISOString(),
+    })
+    navegar(`/estoque/${produto.id}`, { replace: true })
+  }
 
   const { listados, faltando } = useMemo(() => {
     const avaliados = produtos.map((produto) => ({
@@ -62,11 +88,30 @@ export function Estoque() {
         </p>
       </header>
 
-      {/* O que falta configurar vem ANTES do que falta comprar: sem telefone
-          de fornecedor, o botão de pedir não leva a lugar nenhum. */}
-      <PendenciasEstoque orgId={orgId} />
+      {vincular ? (
+        <div className="cartao mb-4 border-slate-900 bg-slate-900 p-4 text-white">
+          <p className="text-sm">Código bipado, ainda sem dono:</p>
+          <p className="my-1 font-mono text-lg font-bold">
+            {formatarCodigoBarras(vincular)}
+          </p>
+          <p className="text-sm text-slate-300">
+            Toque no produto que estava na embalagem. Da próxima vez que bipar,
+            ele abre direto.
+          </p>
+          <button
+            className="mt-3 min-h-toque w-full rounded-xl border-2 border-slate-600 px-4 font-semibold"
+            onClick={() => navegar('/estoque', { replace: true })}
+          >
+            Cancelar
+          </button>
+        </div>
+      ) : (
+        /* O que falta configurar vem ANTES do que falta comprar: sem telefone
+           de fornecedor, o botão de pedir não leva a lugar nenhum. */
+        <PendenciasEstoque orgId={orgId} />
+      )}
 
-      {faltando > 0 && (
+      {!vincular && faltando > 0 && (
         <Link to="/estoque/repor" className="cartao mb-4 flex items-center gap-3 border-amber-300 bg-amber-50 p-4">
           <span aria-hidden className="text-2xl">
             🛒
@@ -83,14 +128,16 @@ export function Estoque() {
         </Link>
       )}
 
-      <div className="mb-3 grid grid-cols-2 gap-2">
-        <Link to="/estoque/requisicoes" className="btn-secundario">
-          📋 Requisições
-        </Link>
-        <Link to="/estoque/contagem" className="btn-secundario">
-          🔢 Contagem
-        </Link>
-      </div>
+      {!vincular && (
+        <div className="mb-3 grid grid-cols-2 gap-2">
+          <Link to="/estoque/requisicoes" className="btn-secundario">
+            📋 Requisições
+          </Link>
+          <Link to="/estoque/contagem" className="btn-secundario">
+            🔢 Contagem
+          </Link>
+        </div>
+      )}
 
       <div className="mb-4 flex gap-2">
         <input
@@ -98,52 +145,67 @@ export function Estoque() {
           type="search"
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
-          placeholder="Buscar no estoque…"
-          aria-label="Buscar no estoque"
+          placeholder={vincular ? 'Buscar o produto…' : 'Buscar no estoque…'}
+          aria-label={vincular ? 'Buscar o produto' : 'Buscar no estoque'}
         />
-        <button
-          className={[
-            'min-h-toque shrink-0 rounded-xl border-2 px-4 font-semibold transition',
-            soFaltando ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white',
-          ].join(' ')}
-          onClick={() => setSoFaltando((s) => !s)}
-          aria-pressed={soFaltando}
-        >
-          Faltando
-        </button>
+        {!vincular && (
+          <button
+            className={[
+              'min-h-toque shrink-0 rounded-xl border-2 px-4 font-semibold transition',
+              soFaltando ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white',
+            ].join(' ')}
+            onClick={() => setSoFaltando((s) => !s)}
+            aria-pressed={soFaltando}
+          >
+            Faltando
+          </button>
+        )}
       </div>
 
       {listados.length === 0 ? (
         <div className="cartao p-6 text-center">
           <p className="text-slate-500">
             {produtos.length === 0
-              ? 'Nenhum produto controla estoque ainda. Marque “Controla estoque” no cadastro do produto.'
+              ? vincular
+                ? 'Nenhum produto cadastrado ainda. Cadastre o produto e o código já fica vinculado.'
+                : 'Nenhum produto controla estoque ainda. Marque “Controla estoque” no cadastro do produto.'
               : busca
                 ? `Nenhum item com "${busca}".`
                 : 'Nada abaixo do mínimo. 👍'}
           </p>
-          <Link to="/produtos/novo" className="btn-primario mt-4 inline-flex">
+          {/* Cadastrar já levando o código bipado: sem isto, quem bipou um
+              produto que ainda não existe teria de decorar treze dígitos. */}
+          <Link
+            to={vincular ? `/produtos/novo?codigo=${encodeURIComponent(vincular)}` : '/produtos/novo'}
+            className="btn-primario mt-4 inline-flex"
+          >
             + Cadastrar produto
           </Link>
         </div>
       ) : (
         <ul className="grid gap-2">
-          {listados.map(({ produto, situacao }) => (
-            <li key={produto.id}>
-              <Link
-                to={`/estoque/${produto.id}`}
-                className={[
-                  'cartao flex items-center gap-3 p-4',
-                  situacao.abaixo ? 'border-amber-300' : '',
-                ].join(' ')}
-              >
+          {listados.map(({ produto, situacao }) => {
+            const conteudo = (
+              <>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-semibold">{produto.nome}</span>
                   <span className="block text-sm text-slate-500">
-                    <Saldos produto={produto} />
+                    {vincular ? (
+                      produto.codigo_barras ? (
+                        // Vincular por cima apaga o código antigo em silêncio;
+                        // dizer que já existe um evita a troca sem querer.
+                        <span className="text-amber-700">
+                          já tem código {formatarCodigoBarras(produto.codigo_barras)}
+                        </span>
+                      ) : (
+                        'sem código de barras'
+                      )
+                    ) : (
+                      <Saldos produto={produto} />
+                    )}
                   </span>
                 </span>
-                {situacao.abaixo && (
+                {!vincular && situacao.abaixo && (
                   <span className="shrink-0 rounded-lg bg-amber-100 px-2 py-1 text-xs font-bold text-amber-900">
                     repor
                   </span>
@@ -151,9 +213,28 @@ export function Estoque() {
                 <span aria-hidden className="text-slate-300">
                   ›
                 </span>
-              </Link>
-            </li>
-          ))}
+              </>
+            )
+
+            const classe = [
+              'cartao flex w-full items-center gap-3 p-4 text-left',
+              !vincular && situacao.abaixo ? 'border-amber-300' : '',
+            ].join(' ')
+
+            return (
+              <li key={produto.id}>
+                {vincular ? (
+                  <button className={classe} onClick={() => void vincularAo(produto)}>
+                    {conteudo}
+                  </button>
+                ) : (
+                  <Link to={`/estoque/${produto.id}`} className={classe}>
+                    {conteudo}
+                  </Link>
+                )}
+              </li>
+            )
+          })}
         </ul>
       )}
     </div>

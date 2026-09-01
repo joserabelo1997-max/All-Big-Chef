@@ -51,6 +51,15 @@ export interface Produto extends Sincronizavel {
   shelf_life_days: number
   unidade?: string | null
   sku?: string | null
+  /**
+   * Código de barras da embalagem do fabricante (EAN-13, EAN-8, UPC…).
+   *
+   * Guardado como veio do leitor, só sem espaço. É o que deixa bipar um saco de
+   * farinha na prateleira e cair direto no produto — sem procurar na lista com
+   * a mão ocupada. Não é obrigatório: produto de feira e pré-preparo da casa
+   * não têm código nenhum.
+   */
+  codigo_barras?: string | null
   observacoes?: string | null
   ativo: boolean
 
@@ -253,8 +262,19 @@ export interface Configuracoes {
   alerta_horario: string
   /** Dias em que a casa fecha: 0 = domingo … 6 = sábado. */
   dias_fechados: number[]
-  /** Modelo da mensagem enviada ao fornecedor pelo WhatsApp. */
+  /**
+   * Modelo antigo da mensagem, com `{{fornecedor}}` e `{{itens}}` dentro.
+   *
+   * Não é mais escrito nem usado para montar o pedido — só lido uma vez, para
+   * converter em `pedido_abertura`/`pedido_fecho`. Os marcadores eram texto
+   * comum e podiam ser corrompidos por digitação ou ditado, e quando isso
+   * acontecia o pedido saía sem nenhum produto, em silêncio.
+   */
   mensagem_pedido?: string | null
+  /** O que vem ANTES da lista de produtos. Texto livre, sem marcador. */
+  pedido_abertura?: string | null
+  /** O que vem DEPOIS da lista de produtos. */
+  pedido_fecho?: string | null
   default_template_id?: string | null
   printer_profile?: unknown
   created_at: string

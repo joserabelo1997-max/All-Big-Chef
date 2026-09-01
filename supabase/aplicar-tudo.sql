@@ -833,3 +833,28 @@ $$;
 -- pode ser reescrito não serve como controle. Correção se faz somando um
 -- movimento de ajuste, que fica visível no histórico.
 revoke update, delete on public.stock_movements from anon, authenticated;
+
+
+-- =============================================================================
+-- 0005 — Código de barras do produto
+-- =============================================================================
+
+alter table public.products
+  add column if not exists codigo_barras text;
+
+-- Único POR ORGANIZAÇÃO, e não global: o mesmo EAN existe na cozinha de todo
+-- mundo, e um índice global faria o cadastro de um restaurante impedir o do
+-- outro. Parcial porque a maioria dos produtos não tem código — nulo não
+-- conflita com nulo no Postgres, mas o índice parcial também não os carrega.
+create unique index if not exists products_codigo_barras_por_org
+  on public.products (org_id, codigo_barras)
+  where codigo_barras is not null and deleted_at is null;
+
+
+-- =============================================================================
+-- 0006 — Mensagem do pedido em duas partes
+-- =============================================================================
+
+alter table public.org_settings
+  add column if not exists pedido_abertura text,
+  add column if not exists pedido_fecho    text;
