@@ -54,7 +54,7 @@ alter table public.team_members
 -- `quantidade` é sempre POSITIVA; o sinal vem do tipo. Guardar negativo
 -- convidaria a uma "entrada de -3" que ninguém sabe interpretar depois.
 -- -----------------------------------------------------------------------------
-create table public.stock_movements (
+create table if not exists public.stock_movements (
   id              uuid primary key,
   org_id          uuid not null references public.organizations(id) on delete cascade,
   product_id      uuid not null references public.products(id) on delete cascade,
@@ -85,14 +85,14 @@ create table public.stock_movements (
     check (tipo not in ('ajuste', 'perda') or motivo is not null)
 );
 
-create index on public.stock_movements (org_id, created_at);
-create index on public.stock_movements (product_id, ocorrido_em);
-create index on public.stock_movements (org_id, product_id, unidade);
+create index if not exists stock_movements_org_id_created_at_idx on public.stock_movements (org_id, created_at);
+create index if not exists stock_movements_product_id_ocorrido_em_idx on public.stock_movements (product_id, ocorrido_em);
+create index if not exists stock_movements_org_id_product_id_unidade_idx on public.stock_movements (org_id, product_id, unidade);
 
 -- -----------------------------------------------------------------------------
 -- Requisição de retirada, com aprovação
 -- -----------------------------------------------------------------------------
-create table public.stock_requests (
+create table if not exists public.stock_requests (
   id                uuid primary key,
   org_id            uuid not null references public.organizations(id) on delete cascade,
   product_id        uuid not null references public.products(id) on delete cascade,
@@ -118,8 +118,8 @@ create table public.stock_requests (
   deleted_at        timestamptz
 );
 
-create index on public.stock_requests (org_id, updated_at);
-create index on public.stock_requests (org_id, status);
+create index if not exists stock_requests_org_id_updated_at_idx on public.stock_requests (org_id, updated_at);
+create index if not exists stock_requests_org_id_status_idx on public.stock_requests (org_id, status);
 
 -- -----------------------------------------------------------------------------
 -- Contagem de inventário
@@ -128,7 +128,7 @@ create index on public.stock_requests (org_id, status);
 -- saldo. A diferença é justamente a informação valiosa: é ela que revela perda,
 -- furto ou lançamento esquecido.
 -- -----------------------------------------------------------------------------
-create table public.stock_counts (
+create table if not exists public.stock_counts (
   id             uuid primary key,
   org_id         uuid not null references public.organizations(id) on delete cascade,
   nome           text,
@@ -141,9 +141,9 @@ create table public.stock_counts (
   updated_at     timestamptz not null default now()
 );
 
-create index on public.stock_counts (org_id, updated_at);
+create index if not exists stock_counts_org_id_updated_at_idx on public.stock_counts (org_id, updated_at);
 
-create table public.stock_count_items (
+create table if not exists public.stock_count_items (
   id                  uuid primary key,
   org_id              uuid not null references public.organizations(id) on delete cascade,
   count_id            uuid not null references public.stock_counts(id) on delete cascade,
@@ -158,7 +158,7 @@ create table public.stock_count_items (
   unique (count_id, product_id, unidade)
 );
 
-create index on public.stock_count_items (org_id, updated_at);
+create index if not exists stock_count_items_org_id_updated_at_idx on public.stock_count_items (org_id, updated_at);
 
 -- -----------------------------------------------------------------------------
 -- Etiquetas de inventário
@@ -171,7 +171,7 @@ create index on public.stock_count_items (org_id, updated_at);
 -- Serve para contar o que a casa produziu e guardou: cada unidade ganha um QR
 -- único e a conferência do freezer vira passar o leitor.
 -- -----------------------------------------------------------------------------
-create table public.inventory_tags (
+create table if not exists public.inventory_tags (
   id               uuid primary key,
   org_id           uuid not null references public.organizations(id) on delete cascade,
   product_id       uuid references public.products(id) on delete set null,
@@ -194,11 +194,11 @@ create table public.inventory_tags (
   deleted_at       timestamptz
 );
 
-create unique index inventory_tags_short_code_por_org
+create unique index if not exists inventory_tags_short_code_por_org
   on public.inventory_tags (org_id, short_code) where deleted_at is null;
 
-create index on public.inventory_tags (org_id, updated_at);
-create index on public.inventory_tags (org_id, status);
+create index if not exists inventory_tags_org_id_updated_at_idx on public.inventory_tags (org_id, updated_at);
+create index if not exists inventory_tags_org_id_status_idx on public.inventory_tags (org_id, status);
 
 -- -----------------------------------------------------------------------------
 -- Configurações novas
@@ -248,6 +248,7 @@ begin
 end;
 $$;
 
+drop trigger if exists stock_movements_recalcula_saldo on public.stock_movements;
 create trigger stock_movements_recalcula_saldo
   after insert or delete on public.stock_movements
   for each row execute function public.recalcular_saldo_estoque();
@@ -263,6 +264,9 @@ begin
     'stock_requests', 'stock_counts', 'stock_count_items', 'inventory_tags'
   ]
   loop
+    -- Dropa antes de criar: o Postgres não tem `create trigger if not exists`,
+    -- e sem isso reaplicar o schema falha na segunda vez.
+    execute format('drop trigger if exists %I_touch on public.%I', t, t);
     execute format(
       'create trigger %I_touch before update on public.%I
          for each row execute function public.touch_updated_at()',
@@ -290,6 +294,8 @@ begin
     'stock_count_items', 'inventory_tags'
   ]
   loop
+    -- Idem para políticas: sem `if not exists`, dropa antes.
+    execute format('drop policy if exists %1$s_acesso_org on public.%1$I', t);
     execute format($f$
       create policy %1$s_acesso_org on public.%1$I
         for all

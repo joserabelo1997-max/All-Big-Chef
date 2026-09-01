@@ -8,12 +8,13 @@
 -- NÃO inclui a 0003 (agendamento das notificações): ela depende das chaves
 -- VAPID e tem passo próprio na seção 7 de docs/SETUP_SUPABASE.md.
 --
--- É seguro rodar mais de uma vez: as criações usam `if not exists` e as
--- funções usam `create or replace`.
+-- RODAR DE NOVO É SEGURO. Tabelas e índices usam `if not exists`; gatilhos e
+-- políticas, que não têm essa forma no Postgres, são derrubados antes de serem
+-- recriados; funções usam `create or replace`. Isso foi testado aplicando o
+-- arquivo duas vezes no mesmo banco, não só uma vez num banco novo.
 --
 -- Depois de rodar, cole supabase/conferir.sql para ver o relatório.
 -- =============================================================================
-
 
 -- ###########################################################################
 -- ## 0001_schema.sql
@@ -53,7 +54,7 @@ $$;
 -- Organização = o restaurante. Multi-tenant desde o início: é muito mais barato
 -- carregar org_id agora do que retrofitar isolamento depois que houver dados.
 -- -----------------------------------------------------------------------------
-create table public.organizations (
+create table if not exists public.organizations (
   id          uuid primary key default gen_random_uuid(),
   nome        text not null,
   created_at  timestamptz not null default now(),
@@ -61,7 +62,7 @@ create table public.organizations (
 );
 
 -- Liga o usuário do Supabase Auth (um login por restaurante) à organização.
-create table public.org_members (
+create table if not exists public.org_members (
   user_id     uuid not null references auth.users(id) on delete cascade,
   org_id      uuid not null references public.organizations(id) on delete cascade,
   papel       text not null default 'admin' check (papel in ('admin', 'operador')),
@@ -69,7 +70,7 @@ create table public.org_members (
   primary key (user_id, org_id)
 );
 
-create index on public.org_members (org_id);
+create index if not exists org_members_org_id_idx on public.org_members (org_id);
 
 -- -----------------------------------------------------------------------------
 -- Equipe da cozinha.
@@ -84,7 +85,7 @@ create index on public.org_members (org_id);
 -- O PIN é opcional e serve contra registro casual em nome de outro colega, não
 -- contra um adversário determinado. Guardamos apenas o hash.
 -- -----------------------------------------------------------------------------
-create table public.team_members (
+create table if not exists public.team_members (
   id          uuid primary key,
   org_id      uuid not null references public.organizations(id) on delete cascade,
   nome        text not null,
@@ -96,13 +97,13 @@ create table public.team_members (
   deleted_at  timestamptz
 );
 
-create index on public.team_members (org_id, updated_at);
+create index if not exists team_members_org_id_updated_at_idx on public.team_members (org_id, updated_at);
 
 -- -----------------------------------------------------------------------------
 -- Pastas / categorias (Laticínios, Pescados, Carnes...). `parent_id` permite
 -- subpastas; a hierarquia é rasa na prática, mas custa pouco suportá-la.
 -- -----------------------------------------------------------------------------
-create table public.folders (
+create table if not exists public.folders (
   id          uuid primary key,
   org_id      uuid not null references public.organizations(id) on delete cascade,
   parent_id   uuid references public.folders(id) on delete set null,
@@ -115,13 +116,13 @@ create table public.folders (
   deleted_at  timestamptz
 );
 
-create index on public.folders (org_id, updated_at);
-create index on public.folders (org_id, parent_id);
+create index if not exists folders_org_id_updated_at_idx on public.folders (org_id, updated_at);
+create index if not exists folders_org_id_parent_id_idx on public.folders (org_id, parent_id);
 
 -- -----------------------------------------------------------------------------
 -- Fornecedores. Vira o campo {{fornecedor}} da etiqueta.
 -- -----------------------------------------------------------------------------
-create table public.suppliers (
+create table if not exists public.suppliers (
   id          uuid primary key,
   org_id      uuid not null references public.organizations(id) on delete cascade,
   nome        text not null,
@@ -134,7 +135,7 @@ create table public.suppliers (
   deleted_at  timestamptz
 );
 
-create index on public.suppliers (org_id, updated_at);
+create index if not exists suppliers_org_id_updated_at_idx on public.suppliers (org_id, updated_at);
 
 -- -----------------------------------------------------------------------------
 -- Produtos cadastrados.
@@ -143,7 +144,7 @@ create index on public.suppliers (org_id, updated_at);
 -- uma vez por produto. As referências ficam com ON DELETE SET NULL: apagar uma
 -- pasta não pode apagar os produtos dentro dela.
 -- -----------------------------------------------------------------------------
-create table public.products (
+create table if not exists public.products (
   id               uuid primary key,
   org_id           uuid not null references public.organizations(id) on delete cascade,
   folder_id        uuid references public.folders(id) on delete set null,
@@ -159,8 +160,8 @@ create table public.products (
   deleted_at       timestamptz
 );
 
-create index on public.products (org_id, updated_at);
-create index on public.products (org_id, folder_id);
+create index if not exists products_org_id_updated_at_idx on public.products (org_id, updated_at);
+create index if not exists products_org_id_folder_id_idx on public.products (org_id, folder_id);
 
 -- -----------------------------------------------------------------------------
 -- Modelos de etiqueta. `elements` guarda o layout desenhado no editor visual:
@@ -168,7 +169,7 @@ create index on public.products (org_id, folder_id);
 -- Milímetro é a única unidade que sobrevive à troca de impressora — o mesmo
 -- modelo renderiza igual em 203 e em 300 dpi.
 -- -----------------------------------------------------------------------------
-create table public.label_templates (
+create table if not exists public.label_templates (
   id          uuid primary key,
   org_id      uuid not null references public.organizations(id) on delete cascade,
   nome        text not null,
@@ -181,10 +182,10 @@ create table public.label_templates (
   deleted_at  timestamptz
 );
 
-create index on public.label_templates (org_id, updated_at);
+create index if not exists label_templates_org_id_updated_at_idx on public.label_templates (org_id, updated_at);
 
 -- Garante no máximo um modelo padrão por organização.
-create unique index label_templates_um_padrao_por_org
+create unique index if not exists label_templates_um_padrao_por_org
   on public.label_templates (org_id)
   where is_default and deleted_at is null;
 
@@ -201,7 +202,7 @@ create unique index label_templates_um_padrao_por_org
 -- `status` é cache derivado de `label_events`, mantido por gatilho (migration
 -- 0002). A verdade está nos eventos, que são append-only.
 -- -----------------------------------------------------------------------------
-create table public.labels (
+create table if not exists public.labels (
   id                    uuid primary key,
   org_id                uuid not null references public.organizations(id) on delete cascade,
   short_code            text not null,
@@ -235,16 +236,16 @@ create table public.labels (
 
 -- O short code é digitado à mão quando o QR está amassado ou sujo de gordura;
 -- precisa ser único dentro do restaurante para resolver sem ambiguidade.
-create unique index labels_short_code_por_org
+create unique index if not exists labels_short_code_por_org
   on public.labels (org_id, short_code)
   where deleted_at is null;
 
-create index on public.labels (org_id, updated_at);
+create index if not exists labels_org_id_updated_at_idx on public.labels (org_id, updated_at);
 -- Índice do painel de validades: as consultas sempre filtram ativas por prazo.
-create index labels_ativas_por_validade
+create index if not exists labels_ativas_por_validade
   on public.labels (org_id, expires_at)
   where status = 'ativa' and deleted_at is null;
-create index on public.labels (org_id, product_id);
+create index if not exists labels_org_id_product_id_idx on public.labels (org_id, product_id);
 
 -- -----------------------------------------------------------------------------
 -- Trilha de auditoria. Append-only: nada aqui é editado ou apagado.
@@ -254,7 +255,7 @@ create index on public.labels (org_id, product_id);
 -- aparelhos offline agirem sobre a mesma etiqueta, os dois eventos sobrevivem;
 -- fosse um UPDATE em `labels.status`, um deles sumiria em silêncio.
 -- -----------------------------------------------------------------------------
-create table public.label_events (
+create table if not exists public.label_events (
   id          uuid primary key,
   org_id      uuid not null references public.organizations(id) on delete cascade,
   label_id    uuid not null references public.labels(id) on delete cascade,
@@ -268,13 +269,13 @@ create table public.label_events (
   created_at  timestamptz not null default now()
 );
 
-create index on public.label_events (org_id, created_at);
-create index on public.label_events (label_id, ocorrido_em);
+create index if not exists label_events_org_id_created_at_idx on public.label_events (org_id, created_at);
+create index if not exists label_events_label_id_ocorrido_em_idx on public.label_events (label_id, ocorrido_em);
 
 -- -----------------------------------------------------------------------------
 -- Assinaturas Web Push, uma por aparelho/navegador.
 -- -----------------------------------------------------------------------------
-create table public.push_subscriptions (
+create table if not exists public.push_subscriptions (
   id          uuid primary key,
   org_id      uuid not null references public.organizations(id) on delete cascade,
   endpoint    text not null unique,
@@ -285,7 +286,7 @@ create table public.push_subscriptions (
   updated_at  timestamptz not null default now()
 );
 
-create index on public.push_subscriptions (org_id);
+create index if not exists push_subscriptions_org_id_idx on public.push_subscriptions (org_id);
 
 -- -----------------------------------------------------------------------------
 -- Configurações do restaurante.
@@ -295,7 +296,7 @@ create index on public.push_subscriptions (org_id);
 -- localStorage, para que um segundo aparelho na cozinha já pareie sabendo os
 -- parâmetros certos, sem repetir a descoberta.
 -- -----------------------------------------------------------------------------
-create table public.org_settings (
+create table if not exists public.org_settings (
   org_id                uuid primary key references public.organizations(id) on delete cascade,
   alerta_dias_antes     integer not null default 2 check (alerta_dias_antes >= 0),
   alerta_horario        time not null default '08:00',
@@ -317,6 +318,9 @@ begin
     'label_templates', 'labels', 'push_subscriptions', 'org_settings'
   ]
   loop
+    -- Dropa antes de criar: o Postgres não tem `create trigger if not exists`,
+    -- e sem isso reaplicar o schema falha na segunda vez.
+    execute format('drop trigger if exists %I_touch on public.%I', t, t);
     execute format(
       'create trigger %I_touch before update on public.%I
          for each row execute function public.touch_updated_at()',
@@ -374,6 +378,7 @@ begin
 end;
 $$;
 
+drop trigger if exists label_events_recalcula_status on public.label_events;
 create trigger label_events_recalcula_status
   after insert on public.label_events
   for each row execute function public.recalcular_status_etiqueta();
@@ -414,9 +419,11 @@ alter table public.push_subscriptions enable row level security;
 alter table public.org_settings      enable row level security;
 
 -- A organização em si: leitura para quem é membro, escrita só via service_role.
+drop policy if exists organizations_leitura on public.organizations;
 create policy organizations_leitura on public.organizations
   for select using (id in (select public.orgs_do_usuario()));
 
+drop policy if exists org_members_leitura on public.org_members;
 create policy org_members_leitura on public.org_members
   for select using (user_id = auth.uid());
 
@@ -430,6 +437,8 @@ begin
     'label_templates', 'labels', 'label_events', 'push_subscriptions'
   ]
   loop
+    -- Idem para políticas: sem `if not exists`, dropa antes.
+    execute format('drop policy if exists %1$s_acesso_org on public.%1$I', t);
     execute format($f$
       create policy %1$s_acesso_org on public.%1$I
         for all
@@ -440,6 +449,7 @@ begin
 end;
 $$;
 
+drop policy if exists org_settings_acesso on public.org_settings;
 create policy org_settings_acesso on public.org_settings
   for all
   using (org_id in (select public.orgs_do_usuario()))
@@ -567,7 +577,7 @@ alter table public.team_members
 -- `quantidade` é sempre POSITIVA; o sinal vem do tipo. Guardar negativo
 -- convidaria a uma "entrada de -3" que ninguém sabe interpretar depois.
 -- -----------------------------------------------------------------------------
-create table public.stock_movements (
+create table if not exists public.stock_movements (
   id              uuid primary key,
   org_id          uuid not null references public.organizations(id) on delete cascade,
   product_id      uuid not null references public.products(id) on delete cascade,
@@ -598,14 +608,14 @@ create table public.stock_movements (
     check (tipo not in ('ajuste', 'perda') or motivo is not null)
 );
 
-create index on public.stock_movements (org_id, created_at);
-create index on public.stock_movements (product_id, ocorrido_em);
-create index on public.stock_movements (org_id, product_id, unidade);
+create index if not exists stock_movements_org_id_created_at_idx on public.stock_movements (org_id, created_at);
+create index if not exists stock_movements_product_id_ocorrido_em_idx on public.stock_movements (product_id, ocorrido_em);
+create index if not exists stock_movements_org_id_product_id_unidade_idx on public.stock_movements (org_id, product_id, unidade);
 
 -- -----------------------------------------------------------------------------
 -- Requisição de retirada, com aprovação
 -- -----------------------------------------------------------------------------
-create table public.stock_requests (
+create table if not exists public.stock_requests (
   id                uuid primary key,
   org_id            uuid not null references public.organizations(id) on delete cascade,
   product_id        uuid not null references public.products(id) on delete cascade,
@@ -631,8 +641,8 @@ create table public.stock_requests (
   deleted_at        timestamptz
 );
 
-create index on public.stock_requests (org_id, updated_at);
-create index on public.stock_requests (org_id, status);
+create index if not exists stock_requests_org_id_updated_at_idx on public.stock_requests (org_id, updated_at);
+create index if not exists stock_requests_org_id_status_idx on public.stock_requests (org_id, status);
 
 -- -----------------------------------------------------------------------------
 -- Contagem de inventário
@@ -641,7 +651,7 @@ create index on public.stock_requests (org_id, status);
 -- saldo. A diferença é justamente a informação valiosa: é ela que revela perda,
 -- furto ou lançamento esquecido.
 -- -----------------------------------------------------------------------------
-create table public.stock_counts (
+create table if not exists public.stock_counts (
   id             uuid primary key,
   org_id         uuid not null references public.organizations(id) on delete cascade,
   nome           text,
@@ -654,9 +664,9 @@ create table public.stock_counts (
   updated_at     timestamptz not null default now()
 );
 
-create index on public.stock_counts (org_id, updated_at);
+create index if not exists stock_counts_org_id_updated_at_idx on public.stock_counts (org_id, updated_at);
 
-create table public.stock_count_items (
+create table if not exists public.stock_count_items (
   id                  uuid primary key,
   org_id              uuid not null references public.organizations(id) on delete cascade,
   count_id            uuid not null references public.stock_counts(id) on delete cascade,
@@ -671,7 +681,7 @@ create table public.stock_count_items (
   unique (count_id, product_id, unidade)
 );
 
-create index on public.stock_count_items (org_id, updated_at);
+create index if not exists stock_count_items_org_id_updated_at_idx on public.stock_count_items (org_id, updated_at);
 
 -- -----------------------------------------------------------------------------
 -- Etiquetas de inventário
@@ -684,7 +694,7 @@ create index on public.stock_count_items (org_id, updated_at);
 -- Serve para contar o que a casa produziu e guardou: cada unidade ganha um QR
 -- único e a conferência do freezer vira passar o leitor.
 -- -----------------------------------------------------------------------------
-create table public.inventory_tags (
+create table if not exists public.inventory_tags (
   id               uuid primary key,
   org_id           uuid not null references public.organizations(id) on delete cascade,
   product_id       uuid references public.products(id) on delete set null,
@@ -707,11 +717,11 @@ create table public.inventory_tags (
   deleted_at       timestamptz
 );
 
-create unique index inventory_tags_short_code_por_org
+create unique index if not exists inventory_tags_short_code_por_org
   on public.inventory_tags (org_id, short_code) where deleted_at is null;
 
-create index on public.inventory_tags (org_id, updated_at);
-create index on public.inventory_tags (org_id, status);
+create index if not exists inventory_tags_org_id_updated_at_idx on public.inventory_tags (org_id, updated_at);
+create index if not exists inventory_tags_org_id_status_idx on public.inventory_tags (org_id, status);
 
 -- -----------------------------------------------------------------------------
 -- Configurações novas
@@ -761,6 +771,7 @@ begin
 end;
 $$;
 
+drop trigger if exists stock_movements_recalcula_saldo on public.stock_movements;
 create trigger stock_movements_recalcula_saldo
   after insert or delete on public.stock_movements
   for each row execute function public.recalcular_saldo_estoque();
@@ -776,6 +787,9 @@ begin
     'stock_requests', 'stock_counts', 'stock_count_items', 'inventory_tags'
   ]
   loop
+    -- Dropa antes de criar: o Postgres não tem `create trigger if not exists`,
+    -- e sem isso reaplicar o schema falha na segunda vez.
+    execute format('drop trigger if exists %I_touch on public.%I', t, t);
     execute format(
       'create trigger %I_touch before update on public.%I
          for each row execute function public.touch_updated_at()',
@@ -803,6 +817,8 @@ begin
     'stock_count_items', 'inventory_tags'
   ]
   loop
+    -- Idem para políticas: sem `if not exists`, dropa antes.
+    execute format('drop policy if exists %1$s_acesso_org on public.%1$I', t);
     execute format($f$
       create policy %1$s_acesso_org on public.%1$I
         for all

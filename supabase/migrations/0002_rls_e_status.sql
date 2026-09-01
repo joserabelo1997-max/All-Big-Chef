@@ -42,6 +42,7 @@ begin
 end;
 $$;
 
+drop trigger if exists label_events_recalcula_status on public.label_events;
 create trigger label_events_recalcula_status
   after insert on public.label_events
   for each row execute function public.recalcular_status_etiqueta();
@@ -82,9 +83,11 @@ alter table public.push_subscriptions enable row level security;
 alter table public.org_settings      enable row level security;
 
 -- A organização em si: leitura para quem é membro, escrita só via service_role.
+drop policy if exists organizations_leitura on public.organizations;
 create policy organizations_leitura on public.organizations
   for select using (id in (select public.orgs_do_usuario()));
 
+drop policy if exists org_members_leitura on public.org_members;
 create policy org_members_leitura on public.org_members
   for select using (user_id = auth.uid());
 
@@ -98,6 +101,8 @@ begin
     'label_templates', 'labels', 'label_events', 'push_subscriptions'
   ]
   loop
+    -- Idem para políticas: sem `if not exists`, dropa antes.
+    execute format('drop policy if exists %1$s_acesso_org on public.%1$I', t);
     execute format($f$
       create policy %1$s_acesso_org on public.%1$I
         for all
@@ -108,6 +113,7 @@ begin
 end;
 $$;
 
+drop policy if exists org_settings_acesso on public.org_settings;
 create policy org_settings_acesso on public.org_settings
   for all
   using (org_id in (select public.orgs_do_usuario()))
