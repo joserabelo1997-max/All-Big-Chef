@@ -142,9 +142,18 @@ class MotorSync {
     for (const op of fila) {
       if (op.tentativas >= MAX_TENTATIVAS) continue
 
+      // Os livros-razão são imutáveis no banco: a migration revoga UPDATE e
+      // DELETE deles. Um upsert comum vira `on conflict do update` e o
+      // Postgres o recusa com "permission denied" — nenhum movimento nem
+      // evento de etiqueta subiria, jamais. `ignoreDuplicates` gera
+      // `on conflict do nothing`, que só precisa de INSERT e continua
+      // idempotente: reenviar a mesma linha não erra nem duplica, que é o
+      // que a fila faz ao repetir uma tentativa.
+      const soInserir = (TABELAS_APPEND_ONLY as readonly string[]).includes(op.tabela)
+
       const { error } = await supabase
         .from(op.tabela)
-        .upsert(op.dados, { onConflict: 'id' })
+        .upsert(op.dados, { onConflict: 'id', ignoreDuplicates: soInserir })
 
       if (error) {
         await this.registrarFalha(op, error.message)

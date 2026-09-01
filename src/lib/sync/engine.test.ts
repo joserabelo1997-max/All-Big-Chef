@@ -25,9 +25,21 @@ interface Consulta {
   cursor: string
 }
 
+interface Envio {
+  tabela: string
+  dados: unknown
+}
+
+/**
+ * Tabelas em que a migration revoga UPDATE e DELETE. O dublê recusa nelas o
+ * mesmo que o Postgres recusa, para que o teste falhe pelo motivo certo.
+ */
+const IMUTAVEIS = ['label_events', 'stock_movements']
+
 /** Registra o que foi pedido e devolve as páginas combinadas por tabela. */
 function clienteFalso(paginas: Record<string, unknown[][]>) {
   const consultas: Consulta[] = []
+  const envios: Envio[] = []
 
   const cliente = {
     from(tabela: string) {
@@ -49,14 +61,25 @@ function clienteFalso(paginas: Record<string, unknown[][]>) {
           const pagina = restantes?.shift() ?? []
           return Promise.resolve({ data: pagina, error: null })
         },
-        upsert: () => Promise.resolve({ error: null }),
+        // O `upsert` do PostgREST vira `on conflict do update`, que exige
+        // privilégio de UPDATE. Nos livros-razão ele foi revogado, e é assim
+        // que o banco de verdade responde.
+        upsert: (dados: unknown, opcoes?: { ignoreDuplicates?: boolean }) => {
+          if (IMUTAVEIS.includes(tabela) && opcoes?.ignoreDuplicates !== true) {
+            return Promise.resolve({
+              error: { message: `permission denied for table ${tabela}` },
+            })
+          }
+          envios.push({ tabela, dados })
+          return Promise.resolve({ error: null })
+        },
       }
 
       return consulta
     },
   }
 
-  return { cliente, consultas }
+  return { cliente, consultas, envios }
 }
 
 function evento(i: number, quando: string) {
@@ -99,7 +122,7 @@ function paginaCheia(inicio: number) {
  * antes de importá-lo — daí o `vi.doMock` com import dinâmico.
  */
 async function sincronizarCom(paginas: Record<string, unknown[][]>) {
-  const { cliente, consultas } = clienteFalso(paginas)
+  const { cliente, consultas, envios } = clienteFalso(paginas)
 
   vi.resetModules()
   vi.doMock('../supabase', () => ({
@@ -109,9 +132,9 @@ async function sincronizarCom(paginas: Record<string, unknown[][]>) {
   }))
 
   const { motorSync } = await import('./engine')
-  await motorSync.sincronizar(ORG)
+  await motorSync.sincronizar(ORG).catch(() => {})
 
-  return consultas
+  return Object.assign(consultas, { envios })
 }
 
 describe('pull das tabelas append-only', () => {
@@ -191,5 +214,98 @@ describe('pull das tabelas append-only', () => {
     })
 
     expect(await db.stock_movements.count()).toBe(1)
+  })
+})
+
+/**
+ * A subida dos livros-razão.
+ *
+ * O motor enfileirava tudo com o mesmo `upsert`, que no PostgREST vira
+ * `on conflict do update`. As migrations revogam UPDATE e DELETE de
+ * `label_events` e `stock_movements` justamente para o registro ser imutável —
+ * e o Postgres então recusava com "permission denied". Resultado: nenhum
+ * movimento de estoque e nenhuma baixa de etiqueta jamais chegariam ao
+ * servidor, e a fila só acumularia. Nada disso aparece sem um banco de
+ * verdade, porque o dublê antigo aceitava qualquer coisa.
+ */
+describe('subida das tabelas append-only', () => {
+  beforeEach(async () => {
+    await db.marcas.clear()
+    await db.outbox.clear()
+    await db.label_events.clear()
+    await db.stock_movements.clear()
+    vi.stubGlobal('navigator', { onLine: true })
+  })
+
+  async function enfileirar(tabela: string, registro: { id: string }) {
+    await db.outbox.add({
+      tabela: tabela as 'stock_movements',
+      operacao: 'upsert',
+      registroId: registro.id,
+      dados: registro as unknown as Record<string, unknown>,
+      criadoEm: new Date().toISOString(),
+      tentativas: 0,
+    })
+  }
+
+  it('sobe um movimento de estoque mesmo com UPDATE revogado', async () => {
+    await enfileirar('stock_movements', movimento(1, '2026-01-01T11:00:00Z'))
+
+    const resultado = await sincronizarCom({})
+
+    expect(resultado.envios.map((e) => e.tabela)).toContain('stock_movements')
+    expect(await db.outbox.count()).toBe(0)
+  })
+
+  it('sobe um evento de etiqueta mesmo com UPDATE revogado', async () => {
+    // Dar baixa numa etiqueta é um evento; sem esta subida, a rastreabilidade
+    // fica presa no aparelho que escaneou.
+    await enfileirar('label_events', evento(1, '2026-01-01T10:00:00Z'))
+
+    const resultado = await sincronizarCom({})
+
+    expect(resultado.envios.map((e) => e.tabela)).toContain('label_events')
+    expect(await db.outbox.count()).toBe(0)
+  })
+
+  it('cadastros continuam subindo como upsert, para poderem ser editados', async () => {
+    // A imutabilidade vale só para os livros-razão. Renomear um produto
+    // precisa continuar sobrescrevendo a linha no servidor.
+    await enfileirar('products', { id: 'p1', org_id: ORG, nome: 'Creme de leite' })
+
+    const resultado = await sincronizarCom({})
+
+    expect(resultado.envios.map((e) => e.tabela)).toContain('products')
+    expect(await db.outbox.count()).toBe(0)
+  })
+
+  it('a fila segura a linha quando o servidor recusa', async () => {
+    // Recusa não pode virar perda silenciosa: a operação fica na fila com o
+    // erro registrado, para tentar de novo e para a tela ter o que mostrar.
+    await enfileirar('stock_requests', { id: 'r1', org_id: ORG })
+
+    vi.resetModules()
+    vi.doMock('../supabase', () => ({
+      supabase: {
+        from: () => ({
+          select: function (this: unknown) { return this },
+          eq: function (this: unknown) { return this },
+          gt: function (this: unknown) { return this },
+          order: function (this: unknown) { return this },
+          limit: () => Promise.resolve({ data: [], error: null }),
+          upsert: () => Promise.resolve({ error: { message: 'rede caiu' } }),
+        }),
+      },
+      supabaseDisponivel: () => true,
+      motivoSemSupabase: () => null,
+    }))
+
+    const { motorSync } = await import('./engine')
+    await motorSync.sincronizar(ORG).catch(() => {})
+
+    const pendente = await db.outbox.toArray()
+    expect(pendente).toHaveLength(1)
+    expect(pendente[0]?.tentativas).toBe(1)
+    expect(pendente[0]?.ultimoErro).toBe('rede caiu')
   })
 })
