@@ -237,7 +237,7 @@ describe('subida das tabelas append-only', () => {
     vi.stubGlobal('navigator', { onLine: true })
   })
 
-  async function enfileirar(tabela: string, registro: { id: string }) {
+  async function enfileirar(tabela: string, registro: { id: string } & Record<string, unknown>) {
     await db.outbox.add({
       tabela: tabela as 'stock_movements',
       operacao: 'upsert',
