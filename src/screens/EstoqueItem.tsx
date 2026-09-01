@@ -9,8 +9,8 @@ import {
   type LoteEmEstoque,
 } from '../domain/estoque'
 import { classificar, formatarData, formatarDataHora } from '../domain/expiry'
-import type { TipoMovimento, UnidadeMovimento } from '../domain/types'
-import { db, registrarMovimento } from '../lib/db'
+import type { Produto, TipoMovimento, UnidadeMovimento } from '../domain/types'
+import { db, registrarMovimento, salvarESincronizar } from '../lib/db'
 import { novoId } from '../lib/ids'
 import { membroSelecionado } from '../lib/sessao'
 import { useSessao } from '../lib/useSessao'
@@ -153,7 +153,7 @@ export function EstoqueItem() {
                 </span>
               </span>
               <span className="block text-sm text-slate-500">
-                {minimo > 0 ? `mínimo ${formatar(minimo)}` : 'sem mínimo definido'}
+                <MinimoEditavel produto={produto} unidade={u} minimo={minimo} />
                 {medio != null && ` · médio pago ${moeda(medio)}`}
               </span>
               {abaixo && (
@@ -508,5 +508,82 @@ function FormularioMovimento({
         </button>
       </div>
     </div>
+  )
+}
+
+/**
+ * O mínimo, editável onde ele é lido.
+ *
+ * Ele existe no cadastro do produto desde sempre, mas escondido: os campos só
+ * aparecem depois de ligar a chave "Controla estoque", que vem desligada — e
+ * quem procura "onde configuro o alerta de compra" nunca encontra. Aqui está o
+ * único lugar em que a pergunta nasce, olhando para o saldo, então é aqui que
+ * a resposta tem que estar.
+ *
+ * O mínimo é o PONTO DE PEDIDO, não o ponto de acabar: chegar nele já é hora
+ * de comprar, porque o fornecedor demora.
+ */
+function MinimoEditavel({
+  produto,
+  unidade,
+  minimo,
+}: {
+  produto: Produto
+  unidade: UnidadeMovimento
+  minimo: number
+}) {
+  const [editando, setEditando] = useState(false)
+  const [valor, setValor] = useState(String(minimo))
+
+  async function salvar() {
+    const numero = Math.max(0, Number(valor) || 0)
+    await salvarESincronizar('products', {
+      ...produto,
+      [unidade === 'kg' ? 'estoque_minimo_kg' : 'estoque_minimo_un']: numero,
+      updated_at: new Date().toISOString(),
+    })
+    setEditando(false)
+  }
+
+  if (!editando) {
+    return (
+      <button
+        className="underline decoration-dotted underline-offset-2"
+        onClick={() => {
+          setValor(String(minimo))
+          setEditando(true)
+        }}
+      >
+        {minimo > 0 ? `mínimo ${formatar(minimo)}` : 'definir mínimo'}
+      </button>
+    )
+  }
+
+  return (
+    <span className="mt-1 flex items-center gap-2">
+      <input
+        className="min-h-toque w-24 rounded-lg border-2 border-slate-300 px-2 tabular-nums"
+        type="number"
+        min={0}
+        step={unidade === 'kg' ? '0.001' : '1'}
+        value={valor}
+        autoFocus
+        onChange={(e) => setValor(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && void salvar()}
+        aria-label={`Estoque mínimo em ${unidade === 'kg' ? 'quilos' : 'unidades'}`}
+      />
+      <button
+        className="min-h-toque rounded-lg bg-slate-900 px-3 font-semibold text-white"
+        onClick={() => void salvar()}
+      >
+        Salvar
+      </button>
+      <button
+        className="min-h-toque rounded-lg border-2 border-slate-200 px-3 font-semibold"
+        onClick={() => setEditando(false)}
+      >
+        Cancelar
+      </button>
+    </span>
   )
 }

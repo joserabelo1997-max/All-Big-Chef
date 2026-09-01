@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 import type { Fornecedor } from '../domain/types'
 import { salvarMensagemPedido } from '../lib/configuracoes'
@@ -7,7 +7,7 @@ import { contatosDisponivel, escolherDaAgenda } from '../lib/contatos'
 import { db, salvarESincronizar } from '../lib/db'
 import { novoId } from '../lib/ids'
 import { useSessao } from '../lib/useSessao'
-import { MENSAGEM_PADRAO } from '../lib/whatsapp'
+import { MENSAGEM_PADRAO, montarMensagem, type ItemDoPedido } from '../lib/whatsapp'
 
 /** Os três campos que descrevem um fornecedor, em cadastro e em edição. */
 interface Campos {
@@ -17,6 +17,18 @@ interface Campos {
 }
 
 const VAZIO: Campos = { nome: '', telefone: '', contato: '' }
+
+/** Os campos que o app preenche sozinho, com nome de gente em vez de sintaxe. */
+const CAMPOS_DA_MENSAGEM = [
+  { marca: '{{fornecedor}}', rotulo: 'nome do fornecedor' },
+  { marca: '{{itens}}', rotulo: 'lista do que falta' },
+] as const
+
+/** Exemplo da prévia. Serve para mostrar o formato, não dados de verdade. */
+const ITENS_DE_EXEMPLO: ItemDoPedido[] = [
+  { nome: 'Creme de leite', quantidade: 12, unidade: 'un' },
+  { nome: 'Muçarela', quantidade: 5, unidade: 'kg' },
+]
 
 /** Fornecedores. Alimentam o campo `{{fornecedor}}` da etiqueta. */
 export function Fornecedores() {
@@ -365,27 +377,93 @@ function ModeloDaMensagem({ orgId }: { orgId: string | null }) {
     [orgId],
   )
 
+  const caixa = useRef<HTMLTextAreaElement>(null)
   const [texto, setTexto] = useState<string | null>(null)
   const atual = texto ?? salvo?.mensagem_pedido ?? MENSAGEM_PADRAO
+
+  function guardar(novoTexto: string) {
+    setTexto(novoTexto)
+    if (orgId) void salvarMensagemPedido(orgId, novoTexto)
+  }
+
+  /**
+   * Insere o campo onde o cursor está — e não no fim.
+   *
+   * É o que faz os botões substituírem de fato a digitação do `{{...}}`: quem
+   * está escrevendo "Olá, " quer o nome ali, naquele ponto da frase.
+   */
+  function inserir(marca: string) {
+    const el = caixa.current
+    const inicio = el?.selectionStart ?? atual.length
+    const fim = el?.selectionEnd ?? atual.length
+    const novoTexto = atual.slice(0, inicio) + marca + atual.slice(fim)
+    guardar(novoTexto)
+
+    // O cursor precisa continuar depois do que foi inserido, senão o próximo
+    // botão joga o campo seguinte no lugar errado.
+    requestAnimationFrame(() => {
+      el?.focus()
+      el?.setSelectionRange(inicio + marca.length, inicio + marca.length)
+    })
+  }
 
   return (
     <section className="mt-8">
       <h2 className="rotulo" id="rotulo-mensagem">
         Mensagem do pedido
       </h2>
+      <p className="mb-2 text-xs text-slate-500">
+        O texto que abre no WhatsApp. Os dois botões abaixo põem no lugar do
+        cursor o que o app preenche sozinho na hora do pedido.
+      </p>
+
+      <div className="mb-2 flex flex-wrap gap-2">
+        {CAMPOS_DA_MENSAGEM.map(({ marca, rotulo }) => (
+          <button
+            key={marca}
+            type="button"
+            className="min-h-toque rounded-xl border-2 border-slate-300 bg-white px-3 text-sm font-semibold"
+            onClick={() => inserir(marca)}
+          >
+            + {rotulo}
+          </button>
+        ))}
+      </div>
+
       <textarea
-        className="campo py-3 font-mono text-sm"
+        ref={caixa}
+        className="campo py-3 text-sm"
         rows={5}
         aria-labelledby="rotulo-mensagem"
         value={atual}
         onChange={(e) => setTexto(e.target.value)}
         onBlur={() => orgId && texto != null && void salvarMensagemPedido(orgId, texto)}
       />
-      <p className="mt-1 text-xs text-slate-500">
-        <code>{'{{fornecedor}}'}</code> vira o nome e <code>{'{{itens}}'}</code> vira a
-        lista do que está faltando. O app só abre o WhatsApp com o texto pronto —
-        o pedido não é registrado.
-      </p>
+
+      <div className="mt-3">
+        <span className="rotulo">Como o fornecedor recebe</span>
+        {/* A prévia é o que torna a caixa entendível sem explicar sintaxe: em
+            vez de dizer o que `{{itens}}` significa, mostramos o resultado. */}
+        <div className="mt-1 rounded-2xl bg-[#dcf8c6] p-3 text-sm leading-relaxed text-slate-800">
+          <p className="whitespace-pre-wrap">
+            {montarMensagem('Laticínios São João', ITENS_DE_EXEMPLO, atual)}
+          </p>
+        </div>
+        <p className="mt-1 text-xs text-slate-500">
+          Nomes e quantidades acima são só exemplo. O app abre a conversa com o
+          texto pronto — o pedido não é registrado.
+        </p>
+      </div>
+
+      {atual !== MENSAGEM_PADRAO && (
+        <button
+          type="button"
+          className="btn-secundario mt-3 w-full"
+          onClick={() => guardar(MENSAGEM_PADRAO)}
+        >
+          Voltar ao texto padrão
+        </button>
+      )}
     </section>
   )
 }

@@ -109,6 +109,14 @@ export class BancoLocal extends Dexie {
       inventory_tags:
         'id, org_id, product_id, short_code, status, updated_at, deleted_at',
     })
+
+    // Versão 3: código de barras do fabricante. Só acrescenta um índice em
+    // `products`; nenhum registro é reescrito, e quem já tem produtos
+    // cadastrados abre esta versão sem perder nada.
+    this.version(3).stores({
+      products:
+        'id, org_id, folder_id, nome, codigo_barras, updated_at, deleted_at',
+    })
   }
 }
 

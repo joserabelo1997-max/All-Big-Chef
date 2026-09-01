@@ -128,7 +128,14 @@ export function Pastas() {
         ))}
       </div>
 
-      <Link to="/produtos" className="btn-secundario mt-4 w-full">
+      {/* Cadastrar produto estava só dentro da lista de produtos, uma tela
+          adiante. Quem chega aqui com a mercadoria na bancada quer cadastrar
+          agora, e ter de entrar numa pasta antes é um passo que não serve a
+          nada. */}
+      <Link to="/produtos/novo" className="btn-primario mt-5 w-full">
+        + Cadastrar produto
+      </Link>
+      <Link to="/produtos" className="btn-secundario mt-2 w-full">
         Ver todos os produtos
       </Link>
     </div>

@@ -51,6 +51,15 @@ export interface Produto extends Sincronizavel {
   shelf_life_days: number
   unidade?: string | null
   sku?: string | null
+  /**
+   * Código de barras da embalagem do fabricante (EAN-13, EAN-8, UPC…).
+   *
+   * Guardado como veio do leitor, só sem espaço. É o que deixa bipar um saco de
+   * farinha na prateleira e cair direto no produto — sem procurar na lista com
+   * a mão ocupada. Não é obrigatório: produto de feira e pré-preparo da casa
+   * não têm código nenhum.
+   */
+  codigo_barras?: string | null
   observacoes?: string | null
   ativo: boolean
 
