@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  ABERTURA_PADRAO,
+  converterMensagemAntiga,
+  FECHO_PADRAO,
   linkDoPedido,
   listarItens,
-  MENSAGEM_PADRAO,
-  montarMensagem,
+  montarPedido,
   telefoneParaWhatsapp,
 } from './whatsapp'
 
@@ -56,23 +58,71 @@ describe('listarItens', () => {
   })
 })
 
-describe('montarMensagem', () => {
+describe('montarPedido', () => {
   const itens = [{ nome: 'Farinha', quantidade: 10, unidade: 'kg' }]
 
-  it('substitui fornecedor e itens no modelo', () => {
-    const texto = montarMensagem('Laticínios São João', itens)
-    expect(texto).toContain('Laticínios São João')
-    expect(texto).toContain('• Farinha: 10 kg')
-  })
-
-  it('aceita um modelo próprio do restaurante', () => {
-    expect(montarMensagem('Sul', itens, 'Oi {{fornecedor}}: {{itens}}')).toBe(
-      'Oi Sul: • Farinha: 10 kg',
+  it('põe a lista ENTRE a abertura e o fecho', () => {
+    // A ordem é a razão de existirem duas caixas em vez de uma: grudar a lista
+    // no fim deixaria o "Obrigado!" antes dos produtos.
+    expect(montarPedido(itens, { abertura: 'Olá!', fecho: 'Obrigado!' })).toBe(
+      'Olá!\n\n• Farinha: 10 kg\n\nObrigado!',
     )
   })
 
-  it('substitui todas as ocorrências, não só a primeira', () => {
-    expect(montarMensagem('Sul', itens, '{{fornecedor}} {{fornecedor}}')).toBe('Sul Sul')
+  it('nunca deixa marcador nenhum na saída', () => {
+    // O defeito que motivou a mudança: um marcador corrompido ia inteiro para
+    // a conversa do fornecedor. Agora não há marcador para sobrar.
+    const texto = montarPedido(itens, { abertura: 'Olá!', fecho: 'Obrigado!' })
+    expect(texto).not.toContain('{{')
+    expect(texto).not.toContain('}}')
+  })
+
+  it('sem abertura nem fecho, manda só a lista', () => {
+    // Quem apagou os dois quis mandar só os produtos; linhas em branco no
+    // começo da conversa parecem defeito.
+    expect(montarPedido(itens, { abertura: '', fecho: '  ' })).toBe('• Farinha: 10 kg')
+  })
+
+  it('usa os textos padrão quando não recebe nenhum', () => {
+    const texto = montarPedido(itens)
+    expect(texto.startsWith(ABERTURA_PADRAO)).toBe(true)
+    expect(texto.endsWith(FECHO_PADRAO)).toBe(true)
+  })
+
+  it('lista vazia não vira mensagem com buraco', () => {
+    expect(montarPedido([], { abertura: 'Olá!', fecho: 'Obrigado!' })).toBe(
+      'Olá!\n\nObrigado!',
+    )
+  })
+})
+
+describe('converterMensagemAntiga', () => {
+  it('corta a mensagem antiga no {{itens}}', () => {
+    expect(
+      converterMensagemAntiga('Bom dia!\n\n{{itens}}\n\nAbraço!'),
+    ).toEqual({ abertura: 'Bom dia!', fecho: 'Abraço!' })
+  })
+
+  it('tira o {{fornecedor}} junto, que era o outro marcador quebrável', () => {
+    const { abertura } = converterMensagemAntiga('Olá, {{fornecedor}}! Segue:\n{{itens}}')
+    expect(abertura).not.toContain('{{')
+    expect(abertura).toBe('Olá! Segue:')
+  })
+
+  it('MENSAGEM CORROMPIDA CAI NO PADRÃO, em vez de ser herdada', () => {
+    // O caso real: o ditado por voz trocou {{itens}} por {{hamach}}, e o pedido
+    // passou a sair sem produto nenhum. Trazer esse texto para a versão nova
+    // seria carregar o defeito junto.
+    expect(
+      converterMensagemAntiga('Olá, {{fornecedor}}! Gostaria de fazer um pedido:\n\n{{hamach}}\n\nObrigado!'),
+    ).toEqual({ abertura: ABERTURA_PADRAO, fecho: FECHO_PADRAO })
+  })
+
+  it('sem mensagem salva, usa o padrão', () => {
+    expect(converterMensagemAntiga(null)).toEqual({
+      abertura: ABERTURA_PADRAO,
+      fecho: FECHO_PADRAO,
+    })
   })
 })
 
@@ -80,7 +130,7 @@ describe('linkDoPedido', () => {
   const itens = [{ nome: 'Farinha de trigo', quantidade: 10, unidade: 'kg' }]
 
   it('codifica acento e quebra de linha', () => {
-    const url = linkDoPedido('11987654321', montarMensagem('Laticínios São João', itens))
+    const url = linkDoPedido('11987654321', montarPedido(itens, { abertura: 'Olá, Laticínios São João!', fecho: 'Obrigado!' }))
     expect(url).toContain('https://wa.me/5511987654321?text=')
     // "í" e "ã" precisam sair percent-encoded, e a quebra de linha como %0A.
     expect(url).toContain('%C3%AD')
@@ -106,7 +156,7 @@ describe('linkDoPedido', () => {
   })
 
   it('devolve uma URL que o navegador aceita', () => {
-    const url = linkDoPedido('11987654321', montarMensagem('Sul', itens, MENSAGEM_PADRAO))
+    const url = linkDoPedido('11987654321', montarPedido(itens))
     const analisada = new URL(url)
     expect(analisada.host).toBe('wa.me')
     // O texto decodificado precisa voltar exatamente como foi montado.

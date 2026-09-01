@@ -262,8 +262,19 @@ export interface Configuracoes {
   alerta_horario: string
   /** Dias em que a casa fecha: 0 = domingo … 6 = sábado. */
   dias_fechados: number[]
-  /** Modelo da mensagem enviada ao fornecedor pelo WhatsApp. */
+  /**
+   * Modelo antigo da mensagem, com `{{fornecedor}}` e `{{itens}}` dentro.
+   *
+   * Não é mais escrito nem usado para montar o pedido — só lido uma vez, para
+   * converter em `pedido_abertura`/`pedido_fecho`. Os marcadores eram texto
+   * comum e podiam ser corrompidos por digitação ou ditado, e quando isso
+   * acontecia o pedido saía sem nenhum produto, em silêncio.
+   */
   mensagem_pedido?: string | null
+  /** O que vem ANTES da lista de produtos. Texto livre, sem marcador. */
+  pedido_abertura?: string | null
+  /** O que vem DEPOIS da lista de produtos. */
+  pedido_fecho?: string | null
   default_template_id?: string | null
   printer_profile?: unknown
   created_at: string

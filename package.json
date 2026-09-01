@@ -14,7 +14,8 @@
     "typecheck": "tsc --noEmit",
     "verificar:sync": "node scripts/verificar-sync.mjs",
     "verificar:fornecedores": "node scripts/verificar-fornecedores.mjs",
-    "verificar:bipagem": "node scripts/verificar-bipagem.mjs"
+    "verificar:bipagem": "node scripts/verificar-bipagem.mjs",
+    "verificar:pedido": "node scripts/verificar-pedido.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",

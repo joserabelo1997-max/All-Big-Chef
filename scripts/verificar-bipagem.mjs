@@ -187,12 +187,12 @@ await pagina.screenshot({ path: `${SAIDA}/mensagem.png`, fullPage: true })
 
 const emFornecedores = await pagina.textContent('body')
 conferir(
-  'os campos da mensagem viraram botões com nome de gente',
-  emFornecedores.includes('nome do fornecedor') && emFornecedores.includes('lista do que falta'),
+  'a mensagem virou duas caixas, sem marcador nenhum',
+  emFornecedores.includes('Antes da lista') && emFornecedores.includes('Depois da lista'),
 )
 conferir(
-  'a prévia mostra o resultado, e não o {{modelo}}',
-  emFornecedores.includes('Laticínios São João') && emFornecedores.includes('Creme de leite'),
+  'e a prévia mostra o resultado, não a sintaxe',
+  emFornecedores.includes('Creme de leite') && !emFornecedores.includes('{{'),
 )
 
 const falhas = checagens.filter((c) => !c.ok)

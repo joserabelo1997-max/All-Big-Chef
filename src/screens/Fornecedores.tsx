@@ -1,13 +1,19 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
-import type { Fornecedor } from '../domain/types'
-import { salvarMensagemPedido } from '../lib/configuracoes'
+import type { Fornecedor, Produto } from '../domain/types'
+import { lerTextosDoPedido, salvarTextosDoPedido } from '../lib/configuracoes'
 import { contatosDisponivel, escolherDaAgenda } from '../lib/contatos'
 import { db, salvarESincronizar } from '../lib/db'
 import { novoId } from '../lib/ids'
 import { useSessao } from '../lib/useSessao'
-import { MENSAGEM_PADRAO, montarMensagem, type ItemDoPedido } from '../lib/whatsapp'
+import {
+  ABERTURA_PADRAO,
+  FECHO_PADRAO,
+  montarPedido,
+  type ItemDoPedido,
+  type TextosDoPedido,
+} from '../lib/whatsapp'
 
 /** Os três campos que descrevem um fornecedor, em cadastro e em edição. */
 interface Campos {
@@ -17,12 +23,6 @@ interface Campos {
 }
 
 const VAZIO: Campos = { nome: '', telefone: '', contato: '' }
-
-/** Os campos que o app preenche sozinho, com nome de gente em vez de sintaxe. */
-const CAMPOS_DA_MENSAGEM = [
-  { marca: '{{fornecedor}}', rotulo: 'nome do fornecedor' },
-  { marca: '{{itens}}', rotulo: 'lista do que falta' },
-] as const
 
 /** Exemplo da prévia. Serve para mostrar o formato, não dados de verdade. */
 const ITENS_DE_EXEMPLO: ItemDoPedido[] = [
@@ -35,6 +35,7 @@ export function Fornecedores() {
   const { orgId, carregando } = useSessao()
   const [novo, setNovo] = useState<Campos>(VAZIO)
   const [editando, setEditando] = useState<string | null>(null)
+  const [vinculando, setVinculando] = useState<string | null>(null)
 
   const fornecedores = useLiveQuery(
     async () => {
@@ -49,6 +50,23 @@ export function Fornecedores() {
     },
     [orgId],
     [],
+  )
+
+  /** Quantos produtos cada fornecedor tem — o vínculo, visto do lado dele. */
+  const quantosProdutos = useLiveQuery(
+    async () => {
+      if (!orgId) return {}
+      const todos = await db.products.where('org_id').equals(orgId).toArray()
+      const contagem: Record<string, number> = {}
+      for (const p of todos) {
+        if (!p.deleted_at && p.ativo && p.supplier_id) {
+          contagem[p.supplier_id] = (contagem[p.supplier_id] ?? 0) + 1
+        }
+      }
+      return contagem
+    },
+    [orgId],
+    {} as Record<string, number>,
   )
 
   async function adicionar() {
@@ -114,7 +132,15 @@ export function Fornecedores() {
       ) : (
         <ul className="grid gap-2">
           {fornecedores.map((f) =>
-            editando === f.id ? (
+            vinculando === f.id ? (
+              <li key={f.id} className="cartao p-4">
+                <ProdutosDoFornecedor
+                  fornecedor={f}
+                  orgId={orgId}
+                  aoFechar={() => setVinculando(null)}
+                />
+              </li>
+            ) : editando === f.id ? (
               <li key={f.id} className="cartao p-4">
                 <LinhaEmEdicao
                   fornecedor={f}
@@ -128,6 +154,10 @@ export function Fornecedores() {
               >
                 <span className="flex-1">
                   <span className="block font-semibold">{f.nome}</span>
+                  <span className="block text-sm text-slate-500">
+                    {quantosProdutos[f.id] ?? 0}{' '}
+                    {(quantosProdutos[f.id] ?? 0) === 1 ? 'produto' : 'produtos'}
+                  </span>
                   {f.telefone || f.contato ? (
                     <span className="block text-sm text-slate-500">
                       {[f.telefone, f.contato].filter(Boolean).join(' · ')}
@@ -141,6 +171,12 @@ export function Fornecedores() {
                     </span>
                   )}
                 </span>
+                <button
+                  className="min-h-[2.75rem] rounded-lg border-2 border-slate-200 px-3 text-sm font-semibold"
+                  onClick={() => setVinculando(f.id)}
+                >
+                  Produtos
+                </button>
                 <button
                   className="min-h-[2.75rem] rounded-lg border-2 border-slate-200 px-3 text-sm font-semibold"
                   onClick={() => setEditando(f.id)}
@@ -365,105 +401,262 @@ function CamposDoFornecedor({
 }
 
 /**
- * Modelo da mensagem de pedido.
+ * Os dois textos da mensagem de pedido.
  *
- * Editável porque cada casa fala com o fornecedor de um jeito, e uma mensagem
- * genérica escrita pelo sistema soa como robô — o que atrapalha justamente na
- * relação que faz o pedido chegar rápido.
+ * Duas caixas e nenhum marcador. A versão anterior tinha uma caixa só, com
+ * `{{fornecedor}}` e `{{itens}}` dentro e botões que os inseriam — mas eles
+ * continuavam texto comum, então dava para digitar por cima, apagar metade ou o
+ * ditado por voz trocar a palavra. Foi o que aconteceu: `{{itens}}` virou
+ * `{{hamach}}` e o pedido passou a sair sem produto nenhum, em silêncio.
+ *
+ * Aqui a lista entra sempre ENTRE as duas caixas, montada pelo app. Não há o
+ * que corromper: o pior que acontece é o texto ficar esquisito.
  */
 function ModeloDaMensagem({ orgId }: { orgId: string | null }) {
-  const salvo = useLiveQuery(
-    async () => (orgId ? db.org_settings.get(orgId) : undefined),
+  const salvos = useLiveQuery(
+    async () => (orgId ? lerTextosDoPedido(orgId) : undefined),
     [orgId],
   )
 
-  const caixa = useRef<HTMLTextAreaElement>(null)
-  const [texto, setTexto] = useState<string | null>(null)
-  const atual = texto ?? salvo?.mensagem_pedido ?? MENSAGEM_PADRAO
+  const [rascunho, setRascunho] = useState<TextosDoPedido | null>(null)
+  const atual = rascunho ?? salvos ?? { abertura: ABERTURA_PADRAO, fecho: FECHO_PADRAO }
 
-  function guardar(novoTexto: string) {
-    setTexto(novoTexto)
-    if (orgId) void salvarMensagemPedido(orgId, novoTexto)
+  function mudar(parte: Partial<TextosDoPedido>) {
+    setRascunho({ ...atual, ...parte })
   }
 
-  /**
-   * Insere o campo onde o cursor está — e não no fim.
-   *
-   * É o que faz os botões substituírem de fato a digitação do `{{...}}`: quem
-   * está escrevendo "Olá, " quer o nome ali, naquele ponto da frase.
-   */
-  function inserir(marca: string) {
-    const el = caixa.current
-    const inicio = el?.selectionStart ?? atual.length
-    const fim = el?.selectionEnd ?? atual.length
-    const novoTexto = atual.slice(0, inicio) + marca + atual.slice(fim)
-    guardar(novoTexto)
-
-    // O cursor precisa continuar depois do que foi inserido, senão o próximo
-    // botão joga o campo seguinte no lugar errado.
-    requestAnimationFrame(() => {
-      el?.focus()
-      el?.setSelectionRange(inicio + marca.length, inicio + marca.length)
-    })
+  function guardar() {
+    if (orgId && rascunho) void salvarTextosDoPedido(orgId, rascunho)
   }
+
+  const ehPadrao =
+    atual.abertura === ABERTURA_PADRAO && atual.fecho === FECHO_PADRAO
 
   return (
     <section className="mt-8">
-      <h2 className="rotulo" id="rotulo-mensagem">
-        Mensagem do pedido
-      </h2>
-      <p className="mb-2 text-xs text-slate-500">
-        O texto que abre no WhatsApp. Os dois botões abaixo põem no lugar do
-        cursor o que o app preenche sozinho na hora do pedido.
+      <h2 className="rotulo">Mensagem do pedido</h2>
+      <p className="mb-3 text-xs text-slate-500">
+        A lista dos produtos entra sozinha no meio, montada na hora do pedido.
+        Você escreve só o que vem antes e o que vem depois dela.
       </p>
 
-      <div className="mb-2 flex flex-wrap gap-2">
-        {CAMPOS_DA_MENSAGEM.map(({ marca, rotulo }) => (
-          <button
-            key={marca}
-            type="button"
-            className="min-h-toque rounded-xl border-2 border-slate-300 bg-white px-3 text-sm font-semibold"
-            onClick={() => inserir(marca)}
-          >
-            + {rotulo}
-          </button>
-        ))}
-      </div>
-
+      <label className="rotulo" htmlFor="pedido-abertura">
+        Antes da lista
+      </label>
       <textarea
-        ref={caixa}
-        className="campo py-3 text-sm"
-        rows={5}
-        aria-labelledby="rotulo-mensagem"
-        value={atual}
-        onChange={(e) => setTexto(e.target.value)}
-        onBlur={() => orgId && texto != null && void salvarMensagemPedido(orgId, texto)}
+        id="pedido-abertura"
+        className="campo mb-3 py-3 text-sm"
+        rows={2}
+        value={atual.abertura}
+        onChange={(e) => mudar({ abertura: e.target.value })}
+        onBlur={guardar}
+        placeholder={ABERTURA_PADRAO}
       />
 
-      <div className="mt-3">
+      <label className="rotulo" htmlFor="pedido-fecho">
+        Depois da lista
+      </label>
+      <textarea
+        id="pedido-fecho"
+        className="campo py-3 text-sm"
+        rows={2}
+        value={atual.fecho}
+        onChange={(e) => mudar({ fecho: e.target.value })}
+        onBlur={guardar}
+        placeholder={FECHO_PADRAO}
+      />
+
+      <div className="mt-4">
         <span className="rotulo">Como o fornecedor recebe</span>
-        {/* A prévia é o que torna a caixa entendível sem explicar sintaxe: em
-            vez de dizer o que `{{itens}}` significa, mostramos o resultado. */}
         <div className="mt-1 rounded-2xl bg-[#dcf8c6] p-3 text-sm leading-relaxed text-slate-800">
-          <p className="whitespace-pre-wrap">
-            {montarMensagem('Laticínios São João', ITENS_DE_EXEMPLO, atual)}
-          </p>
+          <p className="whitespace-pre-wrap">{montarPedido(ITENS_DE_EXEMPLO, atual)}</p>
         </div>
         <p className="mt-1 text-xs text-slate-500">
-          Nomes e quantidades acima são só exemplo. O app abre a conversa com o
-          texto pronto — o pedido não é registrado.
+          Os produtos acima são só exemplo. O app abre a conversa com o texto
+          pronto — o pedido não é registrado.
         </p>
       </div>
 
-      {atual !== MENSAGEM_PADRAO && (
+      {!ehPadrao && (
         <button
           type="button"
           className="btn-secundario mt-3 w-full"
-          onClick={() => guardar(MENSAGEM_PADRAO)}
+          onClick={() => {
+            const padrao = { abertura: ABERTURA_PADRAO, fecho: FECHO_PADRAO }
+            setRascunho(padrao)
+            if (orgId) void salvarTextosDoPedido(orgId, padrao)
+          }}
         >
           Voltar ao texto padrão
         </button>
       )}
     </section>
   )
+}
+
+/**
+ * Quais produtos se compra deste fornecedor.
+ *
+ * O vínculo sempre existiu — `Produto.supplier_id` —, mas só dava para criá-lo
+ * de dentro do cadastro do produto, um por um. Quem abria o fornecedor não via
+ * nada e concluía, com razão, que não havia como ligar produtos a ele.
+ *
+ * Aqui é o mesmo campo, visto do outro lado: marcar grava `supplier_id`,
+ * desmarcar apaga. Sem tabela nova, sem vínculo paralelo que pudesse divergir
+ * do que a tela de produto grava.
+ */
+function ProdutosDoFornecedor({
+  fornecedor,
+  orgId,
+  aoFechar,
+}: {
+  fornecedor: Fornecedor
+  orgId: string | null
+  aoFechar: () => void
+}) {
+  const [busca, setBusca] = useState('')
+
+  const produtos = useLiveQuery(
+    async () => {
+      if (!orgId) return []
+      const todos = await db.products.where('org_id').equals(orgId).toArray()
+      return todos
+        .filter((p) => !p.deleted_at && p.ativo)
+        .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+    },
+    [orgId],
+    [],
+  )
+
+  /**
+   * Quem já estava ligado quando o painel abriu.
+   *
+   * A ordem é calculada a partir DISTO, e não do vínculo atual, para a lista
+   * não se reordenar a cada toque. Ordenar pelo valor vivo fazia o item pular
+   * para o fim da lista no instante em que era desmarcado — debaixo do dedo de
+   * quem estava marcando vários seguidos, que é justamente o uso desta tela.
+   */
+  const [ordemInicial] = useState(() => new Set<string>())
+  const [semeada, setSemeada] = useState(false)
+
+  useEffect(() => {
+    if (semeada || produtos.length === 0) return
+    for (const p of produtos) {
+      if (p.supplier_id === fornecedor.id) ordemInicial.add(p.id)
+    }
+    setSemeada(true)
+  }, [produtos, fornecedor.id, ordemInicial, semeada])
+
+  const filtrados = useMemo(() => {
+    const alvo = semAcento(busca)
+    // Os já ligados primeiro: é a resposta à pergunta "o que eu compro dele?".
+    const ordenados = [...produtos].sort(
+      (a, b) => Number(ordemInicial.has(b.id)) - Number(ordemInicial.has(a.id)),
+    )
+    return alvo ? ordenados.filter((p) => semAcento(p.nome).includes(alvo)) : ordenados
+  }, [produtos, busca, ordemInicial, semeada])
+
+  /**
+   * O que o dedo acabou de mandar, antes de o banco responder.
+   *
+   * Sem isto a caixinha é controlada só pelo `supplier_id` que vem do Dexie: ao
+   * tocar, o React redesenha na hora com o valor ANTIGO — a gravação ainda não
+   * voltou — e a marca só muda alguns quadros depois. Num aparelho de bancada
+   * isso é o toque que "não pegou": a pessoa toca de novo e desfaz o que tinha
+   * acabado de fazer, sem entender por quê.
+   *
+   * `undefined` = ainda não mexi nisto; o valor do banco manda.
+   */
+  const [alterados, setAlterados] = useState<Record<string, boolean>>({})
+
+  const estaLigado = (produto: Produto) =>
+    alterados[produto.id] ?? produto.supplier_id === fornecedor.id
+
+  async function alternar(produto: Produto, ligado: boolean) {
+    setAlterados((atual) => ({ ...atual, [produto.id]: ligado }))
+    await salvarESincronizar('products', {
+      ...produto,
+      supplier_id: ligado ? fornecedor.id : null,
+      updated_at: new Date().toISOString(),
+    })
+  }
+
+  const ligados = produtos.filter(estaLigado).length
+
+  return (
+    <>
+      <div className="mb-3 flex items-center gap-3">
+        <span className="flex-1">
+          <span className="block font-semibold">{fornecedor.nome}</span>
+          <span className="block text-sm text-slate-500">
+            {ligados} {ligados === 1 ? 'produto ligado' : 'produtos ligados'}
+          </span>
+        </span>
+        <button
+          className="min-h-[2.75rem] rounded-lg border-2 border-slate-200 px-4 font-semibold"
+          onClick={aoFechar}
+        >
+          Fechar
+        </button>
+      </div>
+
+      <input
+        className="campo mb-2"
+        type="search"
+        value={busca}
+        onChange={(e) => setBusca(e.target.value)}
+        placeholder="Buscar produto…"
+        aria-label={`Buscar produto para ${fornecedor.nome}`}
+      />
+
+      {filtrados.length === 0 ? (
+        <p className="py-4 text-center text-sm text-slate-500">
+          {produtos.length === 0
+            ? 'Nenhum produto cadastrado ainda.'
+            : `Nenhum produto com "${busca}".`}
+        </p>
+      ) : (
+        <ul className="max-h-80 overflow-y-auto">
+          {filtrados.map((produto) => {
+            const ligado = estaLigado(produto)
+            const deOutro = Boolean(produto.supplier_id) && !ligado
+
+            return (
+              <li key={produto.id}>
+                <label className="flex min-h-toque items-center gap-3 border-b border-slate-100 py-2">
+                  <input
+                    type="checkbox"
+                    className="size-6 shrink-0 accent-slate-900"
+                    checked={ligado}
+                    onChange={(e) => void alternar(produto, e.target.checked)}
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate">{produto.nome}</span>
+                    {/* Um produto tem um fornecedor só. Dizer de quem ele é hoje
+                        evita a troca sem querer, que só apareceria no próximo
+                        pedido — na conversa errada. */}
+                    {deOutro && (
+                      <span className="block text-xs text-amber-700">
+                        hoje é de outro fornecedor
+                      </span>
+                    )}
+                  </span>
+                </label>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </>
+  )
+}
+
+/** Busca sem acento e sem caixa, como no resto do app. */
+function semAcento(texto: string): string {
+  return texto
+    .normalize('NFD')
+    // Faixa dos acentos combinantes, que o NFD separou da letra base.
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
 }

@@ -4,6 +4,7 @@ import {
   abaixoDoMinimo,
   lotesPorValidade,
   lotesVencendo,
+  mediaDoPedido,
   saldoDe,
   situacaoDeEstoque,
   valorMedioPago,
@@ -387,5 +388,69 @@ describe('abaixoDoMinimo', () => {
     expect(
       abaixoDoMinimo(produto({ unidade_estoque: 'un', estoque_minimo_un: 10, saldo_un: 40 })),
     ).toBe(false)
+  })
+})
+
+describe('mediaDoPedido', () => {
+  it('devolve o tamanho típico de uma compra', () => {
+    const movimentos = [
+      mov({ tipo: 'entrada', quantidade: 10 }),
+      mov({ tipo: 'entrada', quantidade: 20 }),
+      mov({ tipo: 'entrada', quantidade: 30 }),
+    ]
+    expect(mediaDoPedido(movimentos, 'kg')).toBe(20)
+  })
+
+  it('é média SIMPLES, e não ponderada como o valor pago', () => {
+    // Ponderar por quantidade daria peso maior justamente às compras grandes, e
+    // a média sairia acima de tudo o que já foi pedido — o oposto de "quanto eu
+    // costumo pedir". Ponderada daria ~98; a compra típica é 50.
+    const movimentos = [
+      mov({ tipo: 'entrada', quantidade: 100 }),
+      mov({ tipo: 'entrada', quantidade: 1 }),
+      mov({ tipo: 'entrada', quantidade: 100 }),
+      mov({ tipo: 'entrada', quantidade: 1 }),
+      mov({ tipo: 'entrada', quantidade: 100 }),
+      mov({ tipo: 'entrada', quantidade: 1 }),
+    ]
+    expect(mediaDoPedido(movimentos, 'kg')).toBeCloseTo(50.5, 1)
+  })
+
+  it('não é o último pedido', () => {
+    // Uma compra de emergência no fim não pode virar o padrão da cozinha.
+    const movimentos = [
+      mov({ tipo: 'entrada', quantidade: 20 }),
+      mov({ tipo: 'entrada', quantidade: 20 }),
+      mov({ tipo: 'entrada', quantidade: 2 }),
+    ]
+    expect(mediaDoPedido(movimentos, 'kg')).toBeCloseTo(14, 1)
+  })
+
+  it('ignora saída, ajuste e perda — nenhum deles é compra', () => {
+    const movimentos = [
+      mov({ tipo: 'entrada', quantidade: 10 }),
+      mov({ tipo: 'saida', quantidade: 500 }),
+      mov({ tipo: 'ajuste', quantidade: 500, motivo: 'contagem' }),
+      mov({ tipo: 'perda', quantidade: 500, motivo: 'quebra' }),
+    ]
+    expect(mediaDoPedido(movimentos, 'kg')).toBe(10)
+  })
+
+  it('separa quilo de unidade', () => {
+    // Contagens independentes: o saco fechado e o granel são coisas diferentes
+    // na prateleira, e somá-los daria uma média que não existe.
+    const movimentos = [
+      mov({ tipo: 'entrada', quantidade: 10, unidade: 'kg' }),
+      mov({ tipo: 'entrada', quantidade: 200, unidade: 'un' }),
+    ]
+    expect(mediaDoPedido(movimentos, 'kg')).toBe(10)
+    expect(mediaDoPedido(movimentos, 'un')).toBe(200)
+  })
+
+  it('sem histórico devolve null, e não zero', () => {
+    // "Nunca comprei" e "compro zero" são coisas diferentes: a tela precisa
+    // poder cair no que falta para o mínimo.
+    expect(mediaDoPedido([], 'kg')).toBeNull()
+    expect(mediaDoPedido([mov({ tipo: 'saida', quantidade: 5 })], 'kg')).toBeNull()
   })
 })

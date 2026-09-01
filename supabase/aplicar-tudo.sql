@@ -849,3 +849,12 @@ alter table public.products
 create unique index if not exists products_codigo_barras_por_org
   on public.products (org_id, codigo_barras)
   where codigo_barras is not null and deleted_at is null;
+
+
+-- =============================================================================
+-- 0006 — Mensagem do pedido em duas partes
+-- =============================================================================
+
+alter table public.org_settings
+  add column if not exists pedido_abertura text,
+  add column if not exists pedido_fecho    text;

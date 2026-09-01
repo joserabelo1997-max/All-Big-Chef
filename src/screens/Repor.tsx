@@ -1,39 +1,27 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 import { situacaoDeEstoque } from '../domain/estoque'
-import type { Fornecedor, Produto } from '../domain/types'
+import type { Produto } from '../domain/types'
 import { db } from '../lib/db'
 import { useSessao } from '../lib/useSessao'
-import {
-  linkDoPedido,
-  MENSAGEM_PADRAO,
-  montarMensagem,
-  type ItemDoPedido,
-} from '../lib/whatsapp'
-
-import { formatar } from './Estoque'
 
 /**
- * O que está no mínimo ou abaixo, agrupado por fornecedor.
+ * Por qual fornecedor começar o pedido.
  *
  * Agrupado por fornecedor porque é assim que o pedido é feito de verdade: uma
  * conversa por fornecedor, com tudo o que se compra dele. Uma lista plana
  * obrigaria a pessoa a separar os itens de cabeça, toda semana.
  *
- * O botão só ABRE o WhatsApp com a mensagem pronta. O pedido não é registrado,
- * como você pediu — quem confirma o que foi combinado é a conversa, e um
- * registro que ninguém confirma vira um histórico que mente.
+ * Esta tela só ESCOLHE; quem monta o pedido é `PedidoFornecedor`. Antes ela
+ * fazia as duas coisas e mandava tudo o que estava no mínimo, sem escolha —
+ * mas o pedido de verdade tem itens somados e itens tirados, e isso precisa de
+ * uma tela com espaço.
  */
 export function Repor() {
   const { orgId, carregando } = useSessao()
   const navegar = useNavigate()
-
-  const configuracoes = useLiveQuery(
-    async () => (orgId ? db.org_settings.get(orgId) : undefined),
-    [orgId],
-  )
 
   const produtos = useLiveQuery(
     async () => {
@@ -48,50 +36,43 @@ export function Repor() {
   const fornecedores = useLiveQuery(
     async () => {
       if (!orgId) return []
-      return db.suppliers.where('org_id').equals(orgId).toArray()
+      const todos = await db.suppliers.where('org_id').equals(orgId).toArray()
+      return todos.filter((f) => !f.deleted_at && f.ativo)
     },
     [orgId],
     [],
   )
 
   const grupos = useMemo(() => {
-    const porFornecedor = new Map<
-      string,
-      { fornecedor: Fornecedor | null; itens: { produto: Produto; pedido: ItemDoPedido[] }[] }
-    >()
+    const contagem = new Map<string, { total: number; faltando: number }>()
 
     for (const produto of produtos) {
-      const situacao = situacaoDeEstoque(produto)
-      if (!situacao.abaixo) continue
-
-      // A quantidade sugerida é o que falta para voltar ao mínimo. É o piso do
-      // pedido, não o pedido inteiro — quem compra ajusta na conversa.
-      const pedido: ItemDoPedido[] = []
-      if (situacao.abaixoKg) {
-        pedido.push({ nome: produto.nome, quantidade: situacao.faltaKg || 1, unidade: 'kg' })
-      }
-      if (situacao.abaixoUn) {
-        pedido.push({ nome: produto.nome, quantidade: situacao.faltaUn || 1, unidade: 'un' })
-      }
-
-      const chave = produto.supplier_id ?? 'sem-fornecedor'
-      const grupo = porFornecedor.get(chave)
-      const fornecedor = fornecedores.find((f) => f.id === produto.supplier_id) ?? null
-
-      if (grupo) grupo.itens.push({ produto, pedido })
-      else porFornecedor.set(chave, { fornecedor, itens: [{ produto, pedido }] })
+      if (!produto.supplier_id) continue
+      const atual = contagem.get(produto.supplier_id) ?? { total: 0, faltando: 0 }
+      atual.total++
+      if (situacaoDeEstoque(produto).abaixo) atual.faltando++
+      contagem.set(produto.supplier_id, atual)
     }
 
-    return [...porFornecedor.values()].sort((a, b) =>
-      (a.fornecedor?.nome ?? 'zzz').localeCompare(b.fornecedor?.nome ?? 'zzz', 'pt-BR'),
-    )
+    return fornecedores
+      .map((fornecedor) => ({
+        fornecedor,
+        ...(contagem.get(fornecedor.id) ?? { total: 0, faltando: 0 }),
+      }))
+      .filter((g) => g.total > 0)
+      .sort(
+        (a, b) =>
+          b.faltando - a.faltando || a.fornecedor.nome.localeCompare(b.fornecedor.nome, 'pt-BR'),
+      )
   }, [produtos, fornecedores])
+
+  const semFornecedor = produtos.filter(
+    (p) => !p.supplier_id && situacaoDeEstoque(p).abaixo,
+  )
 
   if (carregando) {
     return <div className="px-4 py-20 text-center text-slate-400">Carregando…</div>
   }
-
-  const modelo = configuracoes?.mensagem_pedido || MENSAGEM_PADRAO
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
@@ -101,73 +82,80 @@ export function Repor() {
 
       <h1 className="text-2xl font-bold">Repor</h1>
       <p className="mb-5 text-sm text-slate-500">
-        O que chegou no mínimo, agrupado por fornecedor.
+        Escolha o fornecedor para montar o pedido.
       </p>
 
       {grupos.length === 0 ? (
-        <p className="cartao p-6 text-center text-slate-500">
-          Nada para repor. Tudo acima do mínimo. 👍
-        </p>
-      ) : (
-        <div className="grid gap-4">
-          {grupos.map(({ fornecedor, itens }) => {
-            const doPedido = itens.flatMap((i) => i.pedido)
-            const mensagem = montarMensagem(
-              fornecedor?.nome ?? 'tudo bem',
-              doPedido,
-              modelo,
-            )
-
-            return (
-              <section key={fornecedor?.id ?? 'sem-fornecedor'} className="cartao p-4">
-                <h2 className="font-bold">{fornecedor?.nome ?? 'Sem fornecedor definido'}</h2>
-
-                <ul className="my-3 grid gap-1">
-                  {itens.map(({ produto, pedido }) => (
-                    <li key={produto.id} className="flex items-baseline gap-2 text-sm">
-                      <span className="flex-1">{produto.nome}</span>
-                      <span className="font-semibold tabular-nums">
-                        {pedido
-                          .map((p) => `${formatar(p.quantidade)} ${p.unidade}`)
-                          .join(' · ')}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-
-                {fornecedor ? (
-                  <>
-                    <a
-                      className="btn-primario w-full"
-                      href={linkDoPedido(fornecedor.telefone, mensagem)}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      💬 Pedir no WhatsApp
-                    </a>
-                    {!fornecedor.telefone && (
-                      <p className="mt-2 text-xs text-slate-500">
-                        Sem telefone cadastrado — o WhatsApp abre para escolher o
-                        contato.
-                      </p>
-                    )}
-                  </>
-                ) : (
-                  <p className="text-xs text-slate-500">
-                    Defina um fornecedor no cadastro destes produtos para montar o
-                    pedido.
-                  </p>
-                )}
-              </section>
-            )
-          })}
+        <div className="cartao p-6 text-center">
+          <p className="text-slate-500">
+            Nenhum produto está ligado a um fornecedor ainda. Sem isso não dá para
+            montar pedido.
+          </p>
+          <Link to="/config/fornecedores" className="btn-primario mt-4 inline-flex">
+            Ligar produtos a um fornecedor
+          </Link>
         </div>
+      ) : (
+        <ul className="grid gap-2">
+          {grupos.map(({ fornecedor, total, faltando }) => (
+            <li key={fornecedor.id}>
+              <Link
+                to={`/estoque/repor/${fornecedor.id}`}
+                className={`cartao flex items-center gap-3 p-4 ${faltando > 0 ? 'border-amber-300' : ''}`}
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-semibold">{fornecedor.nome}</span>
+                  <span className="block text-sm text-slate-500">
+                    {total} {total === 1 ? 'produto' : 'produtos'}
+                    {faltando > 0 && ` · ${faltando} no mínimo`}
+                  </span>
+                </span>
+                {faltando > 0 && (
+                  <span className="shrink-0 rounded-lg bg-amber-100 px-2 py-1 text-xs font-bold text-amber-900">
+                    repor
+                  </span>
+                )}
+                <span aria-hidden className="text-slate-300">
+                  ›
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
       )}
 
-      <p className="mt-6 text-center text-xs text-slate-400">
-        O pedido não é registrado no sistema — o app só abre a conversa com a
-        mensagem pronta.
-      </p>
+      {semFornecedor.length > 0 && <SemFornecedor produtos={semFornecedor} />}
     </div>
   )
 }
+
+/**
+ * O que está faltando mas não tem de quem comprar.
+ *
+ * Some da tela de pedido por não ter fornecedor, e sumir em silêncio é como um
+ * item fica esquecido até acabar de vez. Aqui ele aparece nomeado, com o
+ * caminho para o conserto.
+ */
+function SemFornecedor({ produtos }: { produtos: Produto[] }) {
+  return (
+    <section className="mt-6">
+      <h2 className="rotulo text-amber-800">Faltando, mas sem fornecedor</h2>
+      <ul className="mt-1 grid gap-2">
+        {produtos.map((produto) => (
+          <li key={produto.id}>
+            <Link
+              to={`/produtos/${produto.id}`}
+              className="cartao flex items-center gap-3 border-amber-300 bg-amber-50 p-3"
+            >
+              <span className="flex-1 truncate font-semibold text-amber-900">
+                {produto.nome}
+              </span>
+              <span className="text-xs text-amber-800">definir fornecedor ›</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
