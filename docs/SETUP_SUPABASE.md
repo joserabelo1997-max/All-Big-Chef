@@ -18,8 +18,21 @@ saber SQL — é copiar, colar e clicar.
 
 ## 2. Aplicar as migrations
 
-No menu lateral, abra **SQL Editor** → **New query**. Rode os arquivos **na
-ordem**, um de cada vez:
+No menu lateral, abra **SQL Editor** → **New query**.
+
+**Caminho curto, e o recomendado:** cole
+[`../supabase/aplicar-tudo.sql`](../supabase/aplicar-tudo.sql) inteiro e clique
+em **Run**. É o schema completo, com as três migrations já na ordem certa —
+colar fora de ordem era o erro mais provável, e assim ele não existe. Depois
+cole [`../supabase/conferir.sql`](../supabase/conferir.sql): ele devolve uma
+tabela onde a coluna `situacao` diz `ok` ou `FALTANDO`, sem nada a interpretar.
+
+Rodar de novo é seguro: as criações usam `if not exists`.
+
+<details>
+<summary>Se preferir arquivo por arquivo</summary>
+
+Rode **na ordem**, um de cada vez:
 
 1. Cole todo o conteúdo de [`../supabase/migrations/0001_schema.sql`](../supabase/migrations/0001_schema.sql)
    e clique em **Run**.
@@ -32,8 +45,11 @@ ordem**, um de cada vez:
 A `0003_agendamento_push.sql` fica para depois — ela é o agendamento das
 notificações e tem passo próprio, mais abaixo.
 
-Cada um deve terminar com *Success. No rows returned*. Se aparecer erro, pare e
-me mostre a mensagem — não rode o próximo.
+Cada um deve terminar com *Success. No rows returned*.
+
+</details>
+
+Se aparecer erro, pare e me mostre a mensagem — não rode o próximo.
 
 ## 3. Pegar as chaves do app
 
