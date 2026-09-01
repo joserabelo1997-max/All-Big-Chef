@@ -1,18 +1,28 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 
+import type { Fornecedor } from '../domain/types'
 import { salvarMensagemPedido } from '../lib/configuracoes'
+import { contatosDisponivel, escolherDaAgenda } from '../lib/contatos'
 import { db, salvarESincronizar } from '../lib/db'
 import { novoId } from '../lib/ids'
 import { useSessao } from '../lib/useSessao'
 import { MENSAGEM_PADRAO } from '../lib/whatsapp'
 
+/** Os três campos que descrevem um fornecedor, em cadastro e em edição. */
+interface Campos {
+  nome: string
+  telefone: string
+  contato: string
+}
+
+const VAZIO: Campos = { nome: '', telefone: '', contato: '' }
+
 /** Fornecedores. Alimentam o campo `{{fornecedor}}` da etiqueta. */
 export function Fornecedores() {
   const { orgId, carregando } = useSessao()
-  const [nome, setNome] = useState('')
-  const [telefone, setTelefone] = useState('')
-  const [contato, setContato] = useState('')
+  const [novo, setNovo] = useState<Campos>(VAZIO)
+  const [editando, setEditando] = useState<string | null>(null)
 
   const fornecedores = useLiveQuery(
     async () => {
@@ -30,7 +40,7 @@ export function Fornecedores() {
   )
 
   async function adicionar() {
-    const limpo = nome.trim()
+    const limpo = novo.nome.trim()
     if (!limpo || !orgId) return
 
     const agora = new Date().toISOString()
@@ -38,16 +48,14 @@ export function Fornecedores() {
       id: novoId(),
       org_id: orgId,
       nome: limpo,
-      telefone: telefone.trim() || null,
-      contato: contato.trim() || null,
+      telefone: novo.telefone.trim() || null,
+      contato: novo.contato.trim() || null,
       ativo: true,
       created_at: agora,
       updated_at: agora,
     })
 
-    setNome('')
-    setTelefone('')
-    setContato('')
+    setNovo(VAZIO)
   }
 
   async function arquivar(id: string) {
@@ -72,47 +80,16 @@ export function Fornecedores() {
       </p>
 
       <div className="cartao mb-6 p-4">
-        <label className="rotulo" htmlFor="nome-fornecedor">
-          Nome
-        </label>
-        <input
-          id="nome-fornecedor"
-          className="campo mb-3"
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
-          placeholder="Ex.: Laticínios São João"
-        />
-        <label className="rotulo" htmlFor="telefone-fornecedor">
-          WhatsApp <span className="font-normal">(opcional)</span>
-        </label>
-        <input
-          id="telefone-fornecedor"
-          className="campo mb-1"
-          type="tel"
-          inputMode="tel"
-          value={telefone}
-          onChange={(e) => setTelefone(e.target.value)}
-          placeholder="(11) 98765-4321"
-        />
-        <p className="mb-3 text-xs text-slate-500">
-          É por aqui que o pedido de reposição abre. Pode digitar com
-          parênteses e traço.
-        </p>
-        <label className="rotulo" htmlFor="contato-fornecedor">
-          Contato <span className="font-normal">(opcional)</span>
-        </label>
-        <input
-          id="contato-fornecedor"
-          className="campo mb-3"
-          value={contato}
-          onChange={(e) => setContato(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && void adicionar()}
-          placeholder="Telefone ou e-mail"
+        <CamposDoFornecedor
+          prefixoId="novo"
+          valores={novo}
+          aoMudar={setNovo}
+          aoConfirmar={() => void adicionar()}
         />
         <button
-          className="btn-primario w-full"
+          className="btn-primario mt-3 w-full"
           onClick={() => void adicionar()}
-          disabled={!nome.trim()}
+          disabled={!novo.nome.trim()}
         >
           Adicionar
         </button>
@@ -124,34 +101,254 @@ export function Fornecedores() {
         </p>
       ) : (
         <ul className="grid gap-2">
-          {fornecedores.map((f) => (
-            <li
-              key={f.id}
-              className={`cartao flex items-center gap-3 p-4 ${f.ativo ? '' : 'opacity-50'}`}
-            >
-              <span className="flex-1">
-                <span className="block font-semibold">{f.nome}</span>
-                {(f.telefone || f.contato) && (
-                  <span className="block text-sm text-slate-500">
-                    {[f.telefone, f.contato].filter(Boolean).join(' · ')}
-                  </span>
-                )}
-              </span>
-              {f.ativo && (
+          {fornecedores.map((f) =>
+            editando === f.id ? (
+              <li key={f.id} className="cartao p-4">
+                <LinhaEmEdicao
+                  fornecedor={f}
+                  aoFechar={() => setEditando(null)}
+                />
+              </li>
+            ) : (
+              <li
+                key={f.id}
+                className={`cartao flex items-center gap-3 p-4 ${f.ativo ? '' : 'opacity-50'}`}
+              >
+                <span className="flex-1">
+                  <span className="block font-semibold">{f.nome}</span>
+                  {f.telefone || f.contato ? (
+                    <span className="block text-sm text-slate-500">
+                      {[f.telefone, f.contato].filter(Boolean).join(' · ')}
+                    </span>
+                  ) : (
+                    // Quem nasceu pelo atalho da tela de produto vem sem
+                    // telefone, e é isso que trava o pedido no WhatsApp. Dizer
+                    // o que falta é mais útil que deixar a linha muda.
+                    <span className="block text-sm text-amber-700">
+                      Sem WhatsApp cadastrado
+                    </span>
+                  )}
+                </span>
                 <button
                   className="min-h-[2.75rem] rounded-lg border-2 border-slate-200 px-3 text-sm font-semibold"
-                  onClick={() => void arquivar(f.id)}
+                  onClick={() => setEditando(f.id)}
                 >
-                  Arquivar
+                  Editar
                 </button>
-              )}
-            </li>
-          ))}
+                {f.ativo && (
+                  <button
+                    className="min-h-[2.75rem] rounded-lg border-2 border-slate-200 px-3 text-sm font-semibold"
+                    onClick={() => void arquivar(f.id)}
+                  >
+                    Arquivar
+                  </button>
+                )}
+              </li>
+            ),
+          )}
         </ul>
       )}
 
       <ModeloDaMensagem orgId={orgId} />
     </div>
+  )
+}
+
+/**
+ * Edição de um fornecedor já cadastrado.
+ *
+ * Existe porque antes só dava para adicionar e arquivar: um fornecedor criado
+ * pelo atalho da tela de produto nascia sem telefone e não havia como dar um a
+ * ele — corrigir exigia arquivar e cadastrar de novo, o que espalha o histórico
+ * das etiquetas já impressas entre dois registros.
+ */
+function LinhaEmEdicao({
+  fornecedor,
+  aoFechar,
+}: {
+  fornecedor: Fornecedor
+  aoFechar: () => void
+}) {
+  const [campos, setCampos] = useState<Campos>({
+    nome: fornecedor.nome,
+    telefone: fornecedor.telefone ?? '',
+    contato: fornecedor.contato ?? '',
+  })
+
+  async function salvar() {
+    const limpo = campos.nome.trim()
+    if (!limpo) return
+    await salvarESincronizar('suppliers', {
+      ...fornecedor,
+      nome: limpo,
+      telefone: campos.telefone.trim() || null,
+      contato: campos.contato.trim() || null,
+      updated_at: new Date().toISOString(),
+    })
+    aoFechar()
+  }
+
+  return (
+    <>
+      <CamposDoFornecedor
+        prefixoId={fornecedor.id}
+        valores={campos}
+        aoMudar={setCampos}
+        aoConfirmar={() => void salvar()}
+      />
+      <div className="mt-3 flex gap-2">
+        <button
+          className="btn-primario flex-1"
+          onClick={() => void salvar()}
+          disabled={!campos.nome.trim()}
+        >
+          Salvar
+        </button>
+        <button
+          className="min-h-[2.75rem] rounded-lg border-2 border-slate-200 px-4 font-semibold"
+          onClick={aoFechar}
+        >
+          Cancelar
+        </button>
+      </div>
+    </>
+  )
+}
+
+/**
+ * Os campos do fornecedor, com o atalho para a agenda do aparelho.
+ *
+ * Um componente só para cadastro e edição porque a lógica da agenda — escolher
+ * entre vários números, preencher o nome junto — é a mesma nos dois, e duplicá-la
+ * significaria consertar cada coisa duas vezes.
+ */
+function CamposDoFornecedor({
+  prefixoId,
+  valores,
+  aoMudar,
+  aoConfirmar,
+}: {
+  prefixoId: string
+  valores: Campos
+  aoMudar: (campos: Campos) => void
+  aoConfirmar: () => void
+}) {
+  // Números do contato escolhido quando não dá para saber qual é o do WhatsApp.
+  const [aEscolher, setAEscolher] = useState<string[]>([])
+  const [aviso, setAviso] = useState<string | null>(null)
+
+  // Calculado uma vez na renderização: a API não aparece nem some no meio do uso.
+  const temAgenda = contatosDisponivel()
+
+  async function daAgenda() {
+    setAviso(null)
+    setAEscolher([])
+
+    try {
+      const contato = await escolherDaAgenda()
+      if (!contato) return // desistiu; não é erro
+
+      // O nome só entra se o campo estiver vazio: sobrescrever o que a pessoa
+      // acabou de digitar seria perder trabalho dela.
+      const nome = valores.nome.trim() ? valores.nome : (contato.nome ?? valores.nome)
+
+      if (contato.sugerido) {
+        aoMudar({ ...valores, nome, telefone: contato.sugerido })
+        return
+      }
+
+      aoMudar({ ...valores, nome })
+
+      if (contato.telefones.length === 0) {
+        setAviso('Esse contato não tem telefone salvo na agenda.')
+      } else {
+        setAEscolher(contato.telefones)
+      }
+    } catch (e) {
+      setAviso(e instanceof Error ? e.message : 'Não foi possível abrir a agenda.')
+    }
+  }
+
+  return (
+    <>
+      <label className="rotulo" htmlFor={`nome-${prefixoId}`}>
+        Nome
+      </label>
+      <input
+        id={`nome-${prefixoId}`}
+        className="campo mb-3"
+        value={valores.nome}
+        onChange={(e) => aoMudar({ ...valores, nome: e.target.value })}
+        placeholder="Ex.: Laticínios São João"
+      />
+
+      <label className="rotulo" htmlFor={`telefone-${prefixoId}`}>
+        WhatsApp <span className="font-normal">(opcional)</span>
+      </label>
+      <div className="mb-1 flex gap-2">
+        <input
+          id={`telefone-${prefixoId}`}
+          className="campo flex-1"
+          type="tel"
+          inputMode="tel"
+          value={valores.telefone}
+          onChange={(e) => aoMudar({ ...valores, telefone: e.target.value })}
+          placeholder="(11) 98765-4321"
+        />
+        {/* Só aparece onde a agenda existe (Android e ChromeOS). No iPhone um
+            botão que só explica por que não funciona ocupa a tela toda vez e
+            não resolve nada. */}
+        {temAgenda && (
+          <button
+            className="min-h-[2.75rem] shrink-0 rounded-lg border-2 border-slate-200 px-3 text-sm font-semibold"
+            onClick={() => void daAgenda()}
+          >
+            📇 Da agenda
+          </button>
+        )}
+      </div>
+
+      {aEscolher.length > 0 && (
+        <div className="mb-2 rounded-lg bg-slate-50 p-3">
+          <p className="mb-2 text-xs text-slate-600">
+            Esse contato tem mais de um número. Qual recebe o pedido?
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {aEscolher.map((numero) => (
+              <button
+                key={numero}
+                className="min-h-[2.75rem] rounded-lg border-2 border-slate-200 bg-white px-3 text-sm font-semibold"
+                onClick={() => {
+                  aoMudar({ ...valores, telefone: numero })
+                  setAEscolher([])
+                }}
+              >
+                {numero}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {aviso && <p className="mb-2 text-xs text-amber-700">{aviso}</p>}
+
+      <p className="mb-3 text-xs text-slate-500">
+        É por aqui que o pedido de reposição abre. Pode digitar com parênteses e
+        traço.
+      </p>
+
+      <label className="rotulo" htmlFor={`contato-${prefixoId}`}>
+        Contato <span className="font-normal">(opcional)</span>
+      </label>
+      <input
+        id={`contato-${prefixoId}`}
+        className="campo"
+        value={valores.contato}
+        onChange={(e) => aoMudar({ ...valores, contato: e.target.value })}
+        onKeyDown={(e) => e.key === 'Enter' && aoConfirmar()}
+        placeholder="Telefone ou e-mail"
+      />
+    </>
   )
 }
 
