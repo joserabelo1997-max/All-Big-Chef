@@ -9,8 +9,7 @@ import { modeloAtivo } from '../lib/modelos'
 import { membroSelecionado, selecionarMembro } from '../lib/sessao'
 import { useCarrinho } from '../lib/useCarrinho'
 import { useSessao } from '../lib/useSessao'
-import { abrirConexao, foiCancelado, motivoNaoPodeImprimir } from '../printing/conectar'
-import { imprimir } from '../printing/imprimir'
+import { abrirTrabalho, foiCancelado, motivoNaoPodeImprimir } from '../printing/conectar'
 import {
   lerPerfilLocal,
   perfilEstaCompleto,
@@ -117,7 +116,7 @@ export function FilaImpressao() {
     let impressas = 0
 
     try {
-      const conexao = await abrirConexao(perfil as PerfilImpressora)
+      const trabalho = await abrirTrabalho(perfil as PerfilImpressora)
 
       for (const { produto, quantidade } of linhas) {
         const fornecedor = produto.supplier_id
@@ -141,16 +140,12 @@ export function FilaImpressao() {
 
           setProgresso(`${impressas + 1} de ${totalEtiquetas} — ${produto.nome}`)
 
-          await imprimir(
-            conexao,
-            modelo,
-            dadosParaImpressao(etiqueta),
-            perfil as PerfilImpressora,
-          )
+          await trabalho.imprimirEtiqueta(modelo, dadosParaImpressao(etiqueta), 1)
           impressas++
         }
       }
 
+      await trabalho.fechar()
       limpar()
       setSucesso(`${impressas} etiquetas impressas.`)
     } catch (e) {

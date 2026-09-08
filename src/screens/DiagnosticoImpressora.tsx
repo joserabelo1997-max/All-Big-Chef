@@ -63,7 +63,7 @@ function emDias(dias: number): string {
   return d.toLocaleDateString('pt-BR')
 }
 
-type Etapa = 'inicio' | 'inspecionando' | 'escolhendo' | 'testando'
+type Etapa = 'inicio' | 'inspecionando' | 'escolhendo' | 'testando' | 'pronto'
 
 export function DiagnosticoImpressora() {
   const [perfil, setPerfil] = useState<PerfilImpressora>(
@@ -92,6 +92,49 @@ export function DiagnosticoImpressora() {
     } catch (e) {
       if (foiCancelado(e)) return
       setErro(e instanceof Error ? e.message : 'Falha ao conectar por USB.')
+    }
+  }
+
+  /**
+   * NIIMBOT: um caminho inteiro à parte.
+   *
+   * Não há descoberta de UUID nem escolha de linguagem — a impressora se
+   * identifica sozinha e diz quantos pontos tem a cabeça. Por isso este botão
+   * pula direto para "pronto", em vez de passar pelo diagnóstico que existe
+   * para impressoras que não contam nada sobre si.
+   */
+  async function pearNiimbot() {
+    setErro(null)
+    setAviso(null)
+    setProgresso('Procurando a impressora…')
+
+    try {
+      const { conectarNiimbot } = await import('../printing/niimbot')
+      const impressora = await conectarNiimbot()
+
+      setPerfil((p) => ({
+        ...p,
+        conexao: 'niimbot',
+        nome: impressora.modelo,
+        modeloNiimbot: impressora.modelo,
+        pontosCabeca: impressora.pontosCabeca,
+        dpi: impressora.dpi,
+        // A cabeça manda: a etiqueta que não couber sai cortada, então já
+        // encolhemos a largura em vez de deixar a pessoa descobrir no papel.
+        larguraMm: Math.min(p.larguraMm, Math.floor((impressora.pontosCabeca / impressora.dpi) * 25.4)),
+      }))
+      await impressora.desconectar()
+
+      setEtapa('pronto')
+      setAviso(
+        `Conectou na ${impressora.modelo}. Cabeça de ${impressora.pontosCabeca} ` +
+          'pontos. Confira a medida da etiqueta abaixo e salve.',
+      )
+    } catch (e) {
+      if (foiCancelado(e)) return
+      setErro(e instanceof Error ? e.message : 'Falha ao conectar na NIIMBOT.')
+    } finally {
+      setProgresso(null)
     }
   }
 
@@ -199,6 +242,26 @@ export function DiagnosticoImpressora() {
         <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-slate-500">
           1. Como conectar
         </h2>
+
+        {/* A NIIMBOT vem primeiro e sozinha porque não é uma terceira via de
+            conexão, e sim outra família de impressora: quem tem uma não precisa
+            escolher linguagem nem descobrir UUID. */}
+        <button
+          onClick={() => void pearNiimbot()}
+          className={[
+            'mb-3 min-h-toque w-full rounded-xl border-2 px-3 text-sm font-semibold transition',
+            perfil.conexao === 'niimbot'
+              ? 'border-slate-900 bg-slate-900 text-white'
+              : 'border-slate-200 bg-white',
+          ].join(' ')}
+        >
+          🏷️ Tenho uma NIIMBOT (B1, B21, D11…)
+        </button>
+        <p className="mb-4 text-xs text-slate-500">
+          Conecta e se configura sozinha. <strong>Feche o aplicativo da NIIMBOT
+          por completo antes</strong> — enquanto ele estiver aberto, a impressora
+          fica presa a ele e não aceita mais ninguém.
+        </p>
 
         <div className="mb-3 grid grid-cols-2 gap-2">
           <button

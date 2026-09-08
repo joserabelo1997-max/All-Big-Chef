@@ -14,11 +14,17 @@ export interface PerfilImpressora {
   /**
    * Por onde falar com a impressora.
    *
-   * A AIYIN de bancada aceita as duas vias. O USB é mais rápido e não depende
+   * A AIYIN de bancada aceita `ble` e `usb`. O USB é mais rápido e não depende
    * de pareamento, mas exige cabo e não existe no iPhone; o Bluetooth alcança
    * qualquer aparelho. Quem decide é a cozinha, no diagnóstico.
+   *
+   * `niimbot` é uma via à parte, e não uma terceira forma de mandar bytes: as
+   * NIIMBOT não falam TSPL nem ESC/POS, e sim um protocolo próprio, de mão
+   * dupla, com aperto de mão e consulta de status. Por isso ela ignora
+   * `linguagem`, `servicoUuid` e `caracteristicaUuid` — quem conduz a conversa
+   * é `printing/niimbot.ts`.
    */
-  conexao: 'ble' | 'usb'
+  conexao: 'ble' | 'usb' | 'niimbot'
   /** Usados apenas na conexão Bluetooth. */
   servicoUuid: string
   caracteristicaUuid: string
@@ -32,6 +38,15 @@ export interface PerfilImpressora {
   /** Bytes por escrita BLE. Reduza se a impressão sair cortada no meio. */
   tamanhoPedaco: number
   pausaMs: number
+  /**
+   * Pontos da cabeça térmica, só nas NIIMBOT.
+   *
+   * Preenchido pela própria impressora quando ela se identifica na conexão. É o
+   * que define a largura máxima da etiqueta: 384 no B1, 567 no B1 Pro.
+   */
+  pontosCabeca?: number
+  /** Modelo que a NIIMBOT informou de si mesma, só para exibir. */
+  modeloNiimbot?: string
 }
 
 export const PERFIL_PADRAO: PerfilImpressora = {
@@ -87,5 +102,33 @@ export function perfilEstaCompleto(
   // No USB não há UUID a guardar: o dispositivo é escolhido na hora, pelo
   // seletor do navegador, e o endpoint é descoberto na conexão.
   if (perfil.conexao === 'usb') return true
+  // A NIIMBOT também não guarda UUID: a biblioteca procura sozinha a
+  // característica que notifica e aceita escrita, porque ela varia por modelo.
+  if (perfil.conexao === 'niimbot') return true
   return Boolean(perfil.servicoUuid && perfil.caracteristicaUuid)
+}
+
+/**
+ * Largura útil da cabeça térmica, em milímetros.
+ *
+ * Serve para avisar ANTES de imprimir que a etiqueta não cabe. Numa NIIMBOT B1
+ * são 384 pontos a 203 dpi — 48 mm —, e a etiqueta de 60 mm que a AIYIN
+ * imprimia sairia cortada pela metade sem nenhum aviso.
+ */
+export function larguraUtilMm(perfil: PerfilImpressora): number | null {
+  if (perfil.conexao !== 'niimbot') return null
+  return arredondarMm((perfil.pontosCabeca ?? 384) / perfil.dpi * 25.4)
+}
+
+/** A etiqueta configurada cabe na cabeça? `null` quando não dá para saber. */
+export function etiquetaCabe(perfil: PerfilImpressora): boolean | null {
+  const util = larguraUtilMm(perfil)
+  if (util === null) return null
+  // Meio milímetro de tolerância: papel e cabeça nunca batem exatamente, e
+  // recusar 48,0 numa cabeça de 48,04 seria implicância.
+  return perfil.larguraMm <= util + 0.5
+}
+
+function arredondarMm(valor: number): number {
+  return Math.round(valor * 10) / 10
 }
