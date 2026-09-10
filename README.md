@@ -139,6 +139,7 @@ leitura nunca cai na tela errada, sem depender de ninguém conferir.
 - [`docs/SETUP_SUPABASE.md`](docs/SETUP_SUPABASE.md) — criar o projeto e aplicar as migrations
 - [`docs/IMPRESSORA.md`](docs/IMPRESSORA.md) — parear a etiquetadora e usar o diagnóstico
 - [`docs/CRM_PLANO.md`](docs/CRM_PLANO.md) — plano do Módulo 3 (CRM de salão): layout, modelo de dados e hospedagem
+- [`docs/prototipo-crm.html`](docs/prototipo-crm.html) — protótipo do CRM em página única, para avaliar o formato antes de escrever o módulo
 
 ## Deploy
 
