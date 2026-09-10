@@ -140,6 +140,7 @@ leitura nunca cai na tela errada, sem depender de ninguém conferir.
 - [`docs/IMPRESSORA.md`](docs/IMPRESSORA.md) — parear a etiquetadora e usar o diagnóstico
 - [`docs/CRM_PLANO.md`](docs/CRM_PLANO.md) — plano do Módulo 3 (CRM de salão): layout, modelo de dados e hospedagem
 - [`docs/prototipo-crm.html`](docs/prototipo-crm.html) — protótipo do CRM em página única, para avaliar o formato antes de escrever o módulo
+- [`docs/kanoe-crm-autonomo.html`](docs/kanoe-crm-autonomo.html) — o mesmo protótipo em arquivo único para baixar e repassar: abre sem conta e sem internet, guarda no próprio navegador, com a ficha anonimizada
 
 ## Deploy
 
