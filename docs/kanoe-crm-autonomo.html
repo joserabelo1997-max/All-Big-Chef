@@ -104,7 +104,7 @@ label.f > span{display:block;font-family:var(--mono);font-size:10px;letter-spaci
 @media (min-width:620px){.grid2{grid-template-columns:1fr 1fr}}
 
 /* cartão de reserva */
-.rescard{display:block;width:100%;text-align:left;background:var(--paper);border:1px solid var(--rule);border-left:4px solid var(--rule);
+.rescard{display:block;width:100%;text-align:left;text-decoration:none;color:inherit;background:var(--paper);border:1px solid var(--rule);border-left:4px solid var(--rule);
   border-radius:9px;padding:13px 15px;cursor:pointer;box-shadow:var(--sh);margin-bottom:9px}
 .rescard:hover{border-color:var(--ai-2);border-left-color:var(--ai-2)}
 .rescard.risk{border-left-color:var(--urushi)}
@@ -124,7 +124,7 @@ label.f > span{display:block;font-family:var(--mono);font-size:10px;letter-spaci
 
 /* list rows */
 .rows{display:flex;flex-direction:column;background:var(--rule);border:1px solid var(--rule);border-radius:9px;overflow:hidden;gap:1px}
-.rowitem{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 12px;background:var(--paper);border:0;text-align:left;padding:13px 15px;cursor:pointer;width:100%}
+.rowitem{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 12px;background:var(--paper);border:0;text-align:left;padding:13px 15px;cursor:pointer;width:100%;text-decoration:none;color:inherit}
 .rowitem:hover{background:var(--panel)}
 .rowitem .n{font-weight:700;font-size:1rem;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rowitem .m{font-size:.8rem;color:var(--ink-3);grid-column:1;font-family:var(--mono)}
@@ -178,6 +178,22 @@ label.f > span{display:block;font-family:var(--mono);font-size:10px;letter-spaci
 .statusrow .mk{width:20px;flex:none;text-align:center;font-size:12px}
 .statusrow .lb{flex:1;font-size:.92rem}
 .statusrow .ct{font-family:var(--mono);font-weight:600;font-size:.9rem;font-variant-numeric:tabular-nums}
+
+/* Navegação sem JavaScript.
+   Cada tela é uma seção com id, e o :target do CSS mostra a que o menu
+   apontou. O painel fica por último no HTML para que o combinador de irmão
+   (~) consiga escondê-lo quando outra estiver aberta — é o que dá o
+   comportamento de "painel é a tela inicial" sem uma linha de script. */
+.tela{display:none}
+.tela:target{display:block}
+#painel{display:block}
+#agenda:target ~ #painel,
+#clientes:target ~ #painel,
+#listas:target ~ #painel,
+.ficha:target ~ #painel{display:none}
+.aviso-estatico{background:var(--amber-bg);border:1px solid var(--rule);border-radius:8px;
+  padding:14px 16px;margin-bottom:18px;font-size:.88rem;line-height:1.55;color:var(--ink-2)}
+.aviso-estatico b{color:var(--amber)}
 
 /* modal */
 .scrim{position:fixed;inset:0;background:rgba(12,15,21,.5);z-index:80;display:flex;align-items:flex-end;justify-content:center}
@@ -241,7 +257,7 @@ setTimeout(function(){
   <div id="app">
     <aside class="side">
       <div class="brand">Kanoe<small>CRM de salão</small></div>
-      <nav id="snav"><a href="#/painel" class="on"><span class="g" aria-hidden="true">◴</span>Painel</a><a href="#/agenda" class=""><span class="g" aria-hidden="true">▤</span>Agenda</a><a href="#/clientes" class=""><span class="g" aria-hidden="true">☰</span>Clientes</a><a href="#/listas" class=""><span class="g" aria-hidden="true">⚙</span>Listas</a></nav>
+      <nav id="snav"><a href="#painel" class=""><span class="g" aria-hidden="true">◴</span>Painel</a><a href="#agenda" class=""><span class="g" aria-hidden="true">▤</span>Agenda</a><a href="#clientes" class="on"><span class="g" aria-hidden="true">☰</span>Clientes</a><a href="#listas" class=""><span class="g" aria-hidden="true">⚙</span>Listas</a></nav>
       <div style="margin-top:auto;font-family:var(--mono);font-size:9.5px;color:var(--ink-3);padding:0 10px;line-height:1.6" id="sfoot">Salvo neste navegador</div>
     </aside>
     <main><div class="pad">
@@ -252,7 +268,1130 @@ setTimeout(function(){
         Abra pelo navegador (Chrome, Safari, Firefox, Edge) — ou peça o link, que dispensa baixar.</p>
         <pre style="white-space:pre-wrap;font-family:var(--mono);font-size:11.5px;margin:0;color:var(--ink-3)"></pre>
       </div>
-      <div id="view">
+      <div id="view" hidden></div>
+      <div id="estatico">
+        <p class="aviso-estatico"><b>Modo leitura.</b> O menu funciona e você circula por todas as telas, mas busca, botões e edição precisam de JavaScript — que este visualizador não está executando. Para usar de verdade, abra o arquivo pelo navegador (Chrome, Safari, Firefox, Edge) ou peça o link.</p>
+        <section class="tela" id="agenda">
+    <div class="spread"><div><h1 class="t">Agenda</h1>
+      <p class="lede">10/09/2026 · quinta</p></div>
+      <button class="btn" onclick="formReserva()">+ Nova reserva</button></div>
+    <p class="eyebrow">Hoje</p><p class="muted" style="font-size:.87rem;margin:-4px 0 4px">Nenhuma reserva para hoje. Crie uma para testar o fluxo do serviço.</p>
+    
+    <p class="eyebrow">Já realizadas · 25</p><a class="rescard " href="#cliente-CLI-00020">
+    <div class="l1"><span><b>19:15</b> · 27/08/26 · Balcão · 2 pessoas</span>
+    <span class="row" style="gap:5px"></span></div>
+    <p class="nm">Ricardo Almeida Prado</p>
+    <p class="ex">“Cadu” · Seasonal Omakase – 2026</p>
+    <div class="chips" style="margin-top:9px"><span class="chip">Traz as próprias bebidas</span><span class="chip">Água ASG</span><span class="chip">Hashi personalizado</span></div>
+  </a><a class="rescard " href="#cliente-CLI-00020">
+    <div class="l1"><span><b>19:15</b> · 14/07/26 · Balcão · 2 pessoas</span>
+    <span class="row" style="gap:5px"></span></div>
+    <p class="nm">Ricardo Almeida Prado</p>
+    <p class="ex">“Cadu” · Seasonal Omakase – 2026</p>
+    <div class="chips" style="margin-top:9px"><span class="chip">Traz as próprias bebidas</span><span class="chip">Água ASG</span><span class="chip">Hashi personalizado</span></div>
+  </a><a class="rescard " href="#cliente-CLI-00020">
+    <div class="l1"><span><b>19:15</b> · 29/04/26 · Balcão · 2 pessoas</span>
+    <span class="row" style="gap:5px"></span></div>
+    <p class="nm">Ricardo Almeida Prado</p>
+    <p class="ex">“Cadu” · Seasonal Omakase – 2026</p>
+    <div class="chips" style="margin-top:9px"><span class="chip">Traz as próprias bebidas</span><span class="chip">Água ASG</span><span class="chip">Hashi personalizado</span></div>
+  </a><a class="rescard " href="#cliente-CLI-00020">
+    <div class="l1"><span><b>19:30</b> · 04/03/26 · Balcão · 5 pessoas</span>
+    <span class="row" style="gap:5px"></span></div>
+    <p class="nm">Ricardo Almeida Prado</p>
+    <p class="ex">“Cadu” · Seasonal Omakase – 2026</p>
+    <div class="chips" style="margin-top:9px"><span class="chip">Traz as próprias bebidas</span><span class="chip">Água ASG</span><span class="chip">Hashi personalizado</span></div>
+  </a><a class="rescard " href="#cliente-CLI-00020">
+    <div class="l1"><span><b>19:00</b> · 26/11/25 · Balcão · 2 pessoas</span>
+    <span class="row" style="gap:5px"></span></div>
+    <p class="nm">Ricardo Almeida Prado</p>
+    <p class="ex">“Cadu” · Seasonal Omakase</p>
+    <div class="chips" style="margin-top:9px"><span class="chip">Traz as próprias bebidas</span><span class="chip">Água ASG</span><span class="chip">Hashi personalizado</span></div>
+  </a><a class="rescard " href="#cliente-CLI-00020">
+    <div class="l1"><span><b>19:00</b> · 12/11/25 · Balcão · 4 pessoas</span>
+    <span class="row" style="gap:5px"></span></div>
+    <p class="nm">Ricardo Almeida Prado</p>
+    <p class="ex">“Cadu” · Tempura Kaiseki Dinner</p>
+    <div class="chips" style="margin-top:9px"><span class="chip">Traz as próprias bebidas</span><span class="chip">Água ASG</span><span class="chip">Hashi personalizado</span></div>
+  </a><a class="rescard " href="#cliente-CLI-00020">
+    <div class="l1"><span><b>19:00</b> · 15/10/25 · Balcão · 2 pessoas</span>
+    <span class="row" style="gap:5px"></span></div>
+    <p class="nm">Ricardo Almeida Prado</p>
+    <p class="ex">“Cadu” · New Craft Sake Pairing Dinner</p>
+    <div class="chips" style="margin-top:9px"><span class="chip">Traz as próprias bebidas</span><span class="chip">Água ASG</span><span class="chip">Hashi personalizado</span></div>
+  </a><a class="rescard " href="#cliente-CLI-00020">
+    <div class="l1"><span><b>19:00</b> · 10/09/25 · Balcão · 2 pessoas</span>
+    <span class="row" style="gap:5px"></span></div>
+    <p class="nm">Ricardo Almeida Prado</p>
+    <p class="ex">“Cadu” · Seasonal Omakase</p>
+    <div class="chips" style="margin-top:9px"><span class="chip">Traz as próprias bebidas</span><span class="chip">Água ASG</span><span class="chip">Hashi personalizado</span></div>
+  </a><a class="rescard " href="#cliente-CLI-00020">
+    <div class="l1"><span><b>19:00</b> · 05/08/25 · Balcão · 3 pessoas</span>
+    <span class="row" style="gap:5px"></span></div>
+    <p class="nm">Ricardo Almeida Prado</p>
+    <p class="ex">“Cadu” · Seasonal Omakase</p>
+    <div class="chips" style="margin-top:9px"><span class="chip">Traz as próprias bebidas</span><span class="chip">Água ASG</span><span class="chip">Hashi personalizado</span></div>
+  </a><a class="rescard " href="#cliente-CLI-00020">
+    <div class="l1"><span><b>19:00</b> · 16/07/25 · Balcão · 1 pessoa</span>
+    <span class="row" style="gap:5px"></span></div>
+    <p class="nm">Ricardo Almeida Prado</p>
+    <p class="ex">“Cadu” · Seasonal Omakase</p>
+    <div class="chips" style="margin-top:9px"><span class="chip">Traz as próprias bebidas</span><span class="chip">Água ASG</span><span class="chip">Hashi personalizado</span></div>
+  </a><a class="rescard " href="#cliente-CLI-00020">
+    <div class="l1"><span><b>19:00</b> · 27/05/25 · Balcão · 2 pessoas</span>
+    <span class="row" style="gap:5px"></span></div>
+    <p class="nm">Ricardo Almeida Prado</p>
+    <p class="ex">“Cadu” · Seasonal Omakase</p>
+    <div class="chips" style="margin-top:9px"><span class="chip">Traz as próprias bebidas</span><span class="chip">Água ASG</span><span class="chip">Hashi personalizado</span></div>
+  </a><a class="rescard " href="#cliente-CLI-00020">
+    <div class="l1"><span><b>19:00</b> · 30/04/25 · Balcão · 4 pessoas</span>
+    <span class="row" style="gap:5px"></span></div>
+    <p class="nm">Ricardo Almeida Prado</p>
+    <p class="ex">“Cadu” · Seasonal Omakase</p>
+    <div class="chips" style="margin-top:9px"><span class="chip">Traz as próprias bebidas</span><span class="chip">Água ASG</span><span class="chip">Hashi personalizado</span></div>
+  </a><a class="rescard " href="#cliente-CLI-00020">
+    <div class="l1"><span><b>19:00</b> · 26/02/25 · Balcão · 2 pessoas</span>
+    <span class="row" style="gap:5px"><span class="pill wait">a faturar</span></span></div>
+    <p class="nm">Ricardo Almeida Prado</p>
+    <p class="ex">“Cadu” · Experiência não registrada</p>
+    <div class="chips" style="margin-top:9px"><span class="chip">Traz as próprias bebidas</span><span class="chip">Água ASG</span><span class="chip">Hashi personalizado</span></div>
+  </a><a class="rescard " href="#cliente-CLI-00020">
+    <div class="l1"><span><b>19:00</b> · 07/11/24 · Balcão · 2 pessoas</span>
+    <span class="row" style="gap:5px"></span></div>
+    <p class="nm">Ricardo Almeida Prado</p>
+    <p class="ex">“Cadu” · Seasonal Omakase: Verão | Summer</p>
+    <div class="chips" style="margin-top:9px"><span class="chip">Traz as próprias bebidas</span><span class="chip">Água ASG</span><span class="chip">Hashi personalizado</span></div>
+  </a><a class="rescard " href="#cliente-CLI-00020">
+    <div class="l1"><span><b>19:00</b> · 07/06/24 · Balcão · 2 pessoas</span>
+    <span class="row" style="gap:5px"></span></div>
+    <p class="nm">Ricardo Almeida Prado</p>
+    <p class="ex">“Cadu” · Seasonal Omakase: Verão | Summer</p>
+    <div class="chips" style="margin-top:9px"><span class="chip">Traz as próprias bebidas</span><span class="chip">Água ASG</span><span class="chip">Hashi personalizado</span></div>
+  </a><a class="rescard " href="#cliente-CLI-00020">
+    <div class="l1"><span><b>19:00</b> · 28/05/24 · Balcão · 2 pessoas</span>
+    <span class="row" style="gap:5px"></span></div>
+    <p class="nm">Ricardo Almeida Prado</p>
+    <p class="ex">“Cadu” · Seasonal Omakase: Verão | Summer</p>
+    <div class="chips" style="margin-top:9px"><span class="chip">Traz as próprias bebidas</span><span class="chip">Água ASG</span><span class="chip">Hashi personalizado</span></div>
+  </a><a class="rescard " href="#cliente-CLI-00020">
+    <div class="l1"><span><b>19:00</b> · 16/04/24 · Balcão · 4 pessoas</span>
+    <span class="row" style="gap:5px"></span></div>
+    <p class="nm">Ricardo Almeida Prado</p>
+    <p class="ex">“Cadu” · Seasonal Omakase: Verão | Summer</p>
+    <div class="chips" style="margin-top:9px"><span class="chip">Traz as próprias bebidas</span><span class="chip">Água ASG</span><span class="chip">Hashi personalizado</span></div>
+  </a><a class="rescard " href="#cliente-CLI-00020">
+    <div class="l1"><span><b>19:00</b> · 26/03/24 · Balcão · 2 pessoas</span>
+    <span class="row" style="gap:5px"></span></div>
+    <p class="nm">Ricardo Almeida Prado</p>
+    <p class="ex">“Cadu” · Seasonal Omakase: Verão | Summer</p>
+    <div class="chips" style="margin-top:9px"><span class="chip">Traz as próprias bebidas</span><span class="chip">Água ASG</span><span class="chip">Hashi personalizado</span></div>
+  </a><a class="rescard " href="#cliente-CLI-00020">
+    <div class="l1"><span><b>19:00</b> · 01/12/23 · Balcão · 2 pessoas</span>
+    <span class="row" style="gap:5px"></span></div>
+    <p class="nm">Ricardo Almeida Prado</p>
+    <p class="ex">“Cadu” · Experiência não registrada</p>
+    <div class="chips" style="margin-top:9px"><span class="chip">Traz as próprias bebidas</span><span class="chip">Água ASG</span><span class="chip">Hashi personalizado</span></div>
+  </a><a class="rescard " href="#cliente-CLI-00020">
+    <div class="l1"><span><b>19:00</b> · 02/08/23 · Balcão · 4 pessoas</span>
+    <span class="row" style="gap:5px"></span></div>
+    <p class="nm">Ricardo Almeida Prado</p>
+    <p class="ex">“Cadu” · Kanoe : Kanoe¸ Reservation</p>
+    <div class="chips" style="margin-top:9px"><span class="chip">Traz as próprias bebidas</span><span class="chip">Água ASG</span><span class="chip">Hashi personalizado</span></div>
+  </a><a class="rescard " href="#cliente-CLI-00020">
+    <div class="l1"><span><b>19:00</b> · 13/06/23 · Balcão · 2 pessoas</span>
+    <span class="row" style="gap:5px"></span></div>
+    <p class="nm">Ricardo Almeida Prado</p>
+    <p class="ex">“Cadu” · Kanoe : Kanoe¸ Reservation</p>
+    <div class="chips" style="margin-top:9px"><span class="chip">Traz as próprias bebidas</span><span class="chip">Água ASG</span><span class="chip">Hashi personalizado</span></div>
+  </a><a class="rescard " href="#cliente-CLI-00020">
+    <div class="l1"><span><b>19:00</b> · 02/05/23 · Balcão · 4 pessoas</span>
+    <span class="row" style="gap:5px"></span></div>
+    <p class="nm">Ricardo Almeida Prado</p>
+    <p class="ex">“Cadu” · Kanoe : Kanoe¸ Reservation</p>
+    <div class="chips" style="margin-top:9px"><span class="chip">Traz as próprias bebidas</span><span class="chip">Água ASG</span><span class="chip">Hashi personalizado</span></div>
+  </a><a class="rescard " href="#cliente-CLI-00020">
+    <div class="l1"><span><b>19:00</b> · 29/03/23 · Balcão · 2 pessoas</span>
+    <span class="row" style="gap:5px"></span></div>
+    <p class="nm">Ricardo Almeida Prado</p>
+    <p class="ex">“Cadu” · Kanoe : Kanoe¸ Reservation</p>
+    <div class="chips" style="margin-top:9px"><span class="chip">Traz as próprias bebidas</span><span class="chip">Água ASG</span><span class="chip">Hashi personalizado</span></div>
+  </a><a class="rescard " href="#cliente-CLI-00020">
+    <div class="l1"><span><b>19:00</b> · 31/01/23 · Balcão · 4 pessoas</span>
+    <span class="row" style="gap:5px"></span></div>
+    <p class="nm">Ricardo Almeida Prado</p>
+    <p class="ex">“Cadu” · Kanoe : Kanoe¸ Reservation</p>
+    <div class="chips" style="margin-top:9px"><span class="chip">Traz as próprias bebidas</span><span class="chip">Água ASG</span><span class="chip">Hashi personalizado</span></div>
+  </a><a class="rescard " href="#cliente-CLI-00020">
+    <div class="l1"><span><b>19:00</b> · 11/11/22 · Balcão · 2 pessoas</span>
+    <span class="row" style="gap:5px"><span class="pill new">1ª vez</span></span></div>
+    <p class="nm">Ricardo Almeida Prado</p>
+    <p class="ex">“Cadu” · Kanoe : Kanoe¸ Reservation</p>
+    <div class="chips" style="margin-top:9px"><span class="chip">Traz as próprias bebidas</span><span class="chip">Água ASG</span><span class="chip">Hashi personalizado</span></div>
+  </a></section>
+        <section class="tela" id="clientes">
+    <div class="spread"><div><h1 class="t">Clientes</h1>
+      <p class="lede">1 na base</p></div>
+      <button class="btn" onclick="formCliente()">+ Novo cliente</button></div>
+    <div class="search"><input type="text" id="q" aria-label="Buscar cliente" placeholder="Nome, apelido, telefone, e-mail, empresa…" value="" oninput="buscar(this.value)"></div>
+    <div class="filters" id="filtros"><button class="fbtn " onclick="toggleFiltro('risco')" aria-pressed="false">Com alergia ou restrição</button><button class="fbtn " onclick="toggleFiltro('top')" aria-pressed="false">No ranking</button><button class="fbtn " onclick="toggleFiltro('sumido')" aria-pressed="false">Sem vir há 6 meses</button></div>
+    <div id="lista"><div class="rows"><a class="rowitem" href="#cliente-CLI-00020">
+    <span class="n">Ricardo Almeida Prado</span>
+    <span class="m">“Cadu” · 25 visitas · última 27/08/26</span>
+    <span class="r"><b>R$&nbsp;148.889</b>top 2</span>
+  </a></div></div></section>
+        <section class="tela" id="listas"><h1 class="t">Listas</h1>
+  <p class="lede">As opções que aparecem nos campos da ficha. Editar aqui muda o app inteiro — sem mexer em código.</p>
+  <div class="blk"><h3>Alergias alimentares · 28 ativas
+      <button class="btn gh sm" onclick="addOpcao('alergia')">+ opção</button></h3>
+      <div class="body" style="padding:0"><div class="rows" style="border:0;border-radius:0">
+      <button class="taxrow " onclick="toggleOpcao('alergia',0)">
+        <span style="flex:1">Camarão</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('alergia',1)">
+        <span style="flex:1">Lagosta</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('alergia',2)">
+        <span style="flex:1">Lagostim</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('alergia',3)">
+        <span style="flex:1">Caranguejo</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('alergia',4)">
+        <span style="flex:1">Siri</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('alergia',5)">
+        <span style="flex:1">Crustáceos</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('alergia',6)">
+        <span style="flex:1">Marisco</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('alergia',7)">
+        <span style="flex:1">Moluscos</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('alergia',8)">
+        <span style="flex:1">Polvo</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('alergia',9)">
+        <span style="flex:1">Lula</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('alergia',10)">
+        <span style="flex:1">Frutos do Mar</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('alergia',11)">
+        <span style="flex:1">Peixes</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('alergia',12)">
+        <span style="flex:1">Caviar</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('alergia',13)">
+        <span style="flex:1">Glúten</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('alergia',14)">
+        <span style="flex:1">Lactose</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('alergia',15)">
+        <span style="flex:1">Castanha-do-Pará</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('alergia',16)">
+        <span style="flex:1">Castanhas</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('alergia',17)">
+        <span style="flex:1">Amendoim</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('alergia',18)">
+        <span style="flex:1">Abacaxi</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('alergia',19)">
+        <span style="flex:1">Kiwi</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('alergia',20)">
+        <span style="flex:1">Abacate</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('alergia',21)">
+        <span style="flex:1">Cebola</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('alergia',22)">
+        <span style="flex:1">Coentro</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('alergia',23)">
+        <span style="flex:1">Poejo</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('alergia',24)">
+        <span style="flex:1">Quinoa</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('alergia',25)">
+        <span style="flex:1">Funghi Porcini</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('alergia',26)">
+        <span style="flex:1">Outra</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('alergia',27)">
+        <span style="flex:1">Unagui</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button></div></div></div><div class="blk"><h3>Cargo / função · 31 ativas
+      <button class="btn gh sm" onclick="addOpcao('cargo')">+ opção</button></h3>
+      <div class="body" style="padding:0"><div class="rows" style="border:0;border-radius:0">
+      <button class="taxrow " onclick="toggleOpcao('cargo',0)">
+        <span style="flex:1">CEO</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('cargo',1)">
+        <span style="flex:1">COO</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('cargo',2)">
+        <span style="flex:1">CFO</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('cargo',3)">
+        <span style="flex:1">CRO</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('cargo',4)">
+        <span style="flex:1">CTO</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('cargo',5)">
+        <span style="flex:1">CMO</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('cargo',6)">
+        <span style="flex:1">CIO</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('cargo',7)">
+        <span style="flex:1">Diretor(a)</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('cargo',8)">
+        <span style="flex:1">Diretor(a) Executivo(a)</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('cargo',9)">
+        <span style="flex:1">Diretor(a) Sênior</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('cargo',10)">
+        <span style="flex:1">Gerente</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('cargo',11)">
+        <span style="flex:1">Gerente de Produto</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('cargo',12)">
+        <span style="flex:1">Gerente de Operações</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('cargo',13)">
+        <span style="flex:1">Head</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('cargo',14)">
+        <span style="flex:1">Coordenador(a)</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('cargo',15)">
+        <span style="flex:1">Supervisor(a)</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('cargo',16)">
+        <span style="flex:1">Sócio(a)</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('cargo',17)">
+        <span style="flex:1">Sócio(a)-Fundador(a)</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('cargo',18)">
+        <span style="flex:1">Proprietário(a)</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('cargo',19)">
+        <span style="flex:1">Cofundador(a)</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('cargo',20)">
+        <span style="flex:1">Fundador(a)</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('cargo',21)">
+        <span style="flex:1">Advogado(a) Associado(a)</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('cargo',22)">
+        <span style="flex:1">Advogado(a) Sênior</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('cargo',23)">
+        <span style="flex:1">Promotor(a)</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('cargo',24)">
+        <span style="flex:1">Juiz(a)</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('cargo',25)">
+        <span style="flex:1">Médico(a)</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('cargo',26)">
+        <span style="flex:1">Professor(a)</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('cargo',27)">
+        <span style="flex:1">Pesquisador(a)</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('cargo',28)">
+        <span style="flex:1">Consultor(a)</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('cargo',29)">
+        <span style="flex:1">Artista</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('cargo',30)">
+        <span style="flex:1">Outro</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button></div></div></div><div class="blk"><h3>Interesses gastronômicos · 8 ativas
+      <button class="btn gh sm" onclick="addOpcao('interesse_gastronomico')">+ opção</button></h3>
+      <div class="body" style="padding:0"><div class="rows" style="border:0;border-radius:0">
+      <button class="taxrow " onclick="toggleOpcao('interesse_gastronomico',0)">
+        <span style="flex:1">Colecionador de vinhos</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('interesse_gastronomico',1)">
+        <span style="flex:1">Frequenta omakases</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('interesse_gastronomico',2)">
+        <span style="flex:1">Jantares harmonizados</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('interesse_gastronomico',3)">
+        <span style="flex:1">Participa de degustações</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('interesse_gastronomico',4)">
+        <span style="flex:1">Interesse em Harmonizações</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('interesse_gastronomico',5)">
+        <span style="flex:1">Interesse em Ingredientes Raros</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('interesse_gastronomico',6)">
+        <span style="flex:1">Outro</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('interesse_gastronomico',7)">
+        <span style="flex:1">Primeiro Omakase</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button></div></div></div><div class="blk"><h3>Mão dominante · 3 ativas
+      <button class="btn gh sm" onclick="addOpcao('mao_dominante')">+ opção</button></h3>
+      <div class="body" style="padding:0"><div class="rows" style="border:0;border-radius:0">
+      <button class="taxrow " onclick="toggleOpcao('mao_dominante',0)">
+        <span style="flex:1">Destro</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('mao_dominante',1)">
+        <span style="flex:1">Canhoto</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('mao_dominante',2)">
+        <span style="flex:1">Ambidestro</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button></div></div></div><div class="blk"><h3>Marca de água · 8 ativas
+      <button class="btn gh sm" onclick="addOpcao('marca_agua')">+ opção</button></h3>
+      <div class="body" style="padding:0"><div class="rows" style="border:0;border-radius:0">
+      <button class="taxrow " onclick="toggleOpcao('marca_agua',0)">
+        <span style="flex:1">Pellegrino</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('marca_agua',1)">
+        <span style="flex:1">Perrier</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('marca_agua',2)">
+        <span style="flex:1">Acqua Panna</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('marca_agua',3)">
+        <span style="flex:1">Voss</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('marca_agua',4)">
+        <span style="flex:1">Evian</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('marca_agua',5)">
+        <span style="flex:1">Fiji</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('marca_agua',6)">
+        <span style="flex:1">São Lourenço</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('marca_agua',7)">
+        <span style="flex:1">Outra</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button></div></div></div><div class="blk"><h3>Ocasiões · 9 ativas
+      <button class="btn gh sm" onclick="addOpcao('ocasiao')">+ opção</button></h3>
+      <div class="body" style="padding:0"><div class="rows" style="border:0;border-radius:0">
+      <button class="taxrow " onclick="toggleOpcao('ocasiao',0)">
+        <span style="flex:1">Aniversário</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('ocasiao',1)">
+        <span style="flex:1">Aniversário de relacionamento</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('ocasiao',2)">
+        <span style="flex:1">Aniversário de casamento</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('ocasiao',3)">
+        <span style="flex:1">Dia dos Namorados</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('ocasiao',4)">
+        <span style="flex:1">Noivado</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('ocasiao',5)">
+        <span style="flex:1">Pedido de casamento</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('ocasiao',6)">
+        <span style="flex:1">Negócios</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('ocasiao',7)">
+        <span style="flex:1">Comemoração</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('ocasiao',8)">
+        <span style="flex:1">Outro</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button></div></div></div><div class="blk"><h3>Perfil de interesses · 7 ativas
+      <button class="btn gh sm" onclick="addOpcao('perfil_interesses')">+ opção</button></h3>
+      <div class="body" style="padding:0"><div class="rows" style="border:0;border-radius:0">
+      <button class="taxrow " onclick="toggleOpcao('perfil_interesses',0)">
+        <span style="flex:1">Busca Exclusividade</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('perfil_interesses',1)">
+        <span style="flex:1">Explorador Gastronômico</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('perfil_interesses',2)">
+        <span style="flex:1">Colecionador de Experiências</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('perfil_interesses',3)">
+        <span style="flex:1">Interesse em Harmonizações</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('perfil_interesses',4)">
+        <span style="flex:1">Interesse em Cultura Japonesa</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('perfil_interesses',5)">
+        <span style="flex:1">Interesse em Ingredientes Raros</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('perfil_interesses',6)">
+        <span style="flex:1">Outro</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button></div></div></div><div class="blk"><h3>Preferência de água · 2 ativas
+      <button class="btn gh sm" onclick="addOpcao('preferencia_agua')">+ opção</button></h3>
+      <div class="body" style="padding:0"><div class="rows" style="border:0;border-radius:0">
+      <button class="taxrow " onclick="toggleOpcao('preferencia_agua',0)">
+        <span style="flex:1">ASG</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('preferencia_agua',1)">
+        <span style="flex:1">ACG</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button></div></div></div><div class="blk"><h3>Preferências gastronômicas · 30 ativas
+      <button class="btn gh sm" onclick="addOpcao('preferencia')">+ opção</button></h3>
+      <div class="body" style="padding:0"><div class="rows" style="border:0;border-radius:0">
+      <button class="taxrow " onclick="toggleOpcao('preferencia',0)">
+        <span style="flex:1">Carnes</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('preferencia',1)">
+        <span style="flex:1">Wagyu</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('preferencia',2)">
+        <span style="flex:1">Carne Bovina</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('preferencia',3)">
+        <span style="flex:1">Carne Suína</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('preferencia',4)">
+        <span style="flex:1">Aves</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('preferencia',5)">
+        <span style="flex:1">Peixes</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('preferencia',6)">
+        <span style="flex:1">Frutos do Mar</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('preferencia',7)">
+        <span style="flex:1">Crustáceos</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('preferencia',8)">
+        <span style="flex:1">Moluscos</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('preferencia',9)">
+        <span style="flex:1">Sushi</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('preferencia',10)">
+        <span style="flex:1">Sashimi</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('preferencia',11)">
+        <span style="flex:1">Tempurá</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('preferencia',12)">
+        <span style="flex:1">Arroz</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('preferencia',13)">
+        <span style="flex:1">Massas</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('preferencia',14)">
+        <span style="flex:1">Cogumelos</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('preferencia',15)">
+        <span style="flex:1">Legumes</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('preferencia',16)">
+        <span style="flex:1">Verduras</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('preferencia',17)">
+        <span style="flex:1">Frutas</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('preferencia',18)">
+        <span style="flex:1">Ingredientes Sazonais</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('preferencia',19)">
+        <span style="flex:1">Ingredientes Raros</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('preferencia',20)">
+        <span style="flex:1">Sabores Suaves</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('preferencia',21)">
+        <span style="flex:1">Sabores Intensos</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('preferencia',22)">
+        <span style="flex:1">Preparações Cruas</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('preferencia',23)">
+        <span style="flex:1">Preparações Grelhadas</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('preferencia',24)">
+        <span style="flex:1">Preparações Fritas</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('preferencia',25)">
+        <span style="flex:1">Preparações Cozidas</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('preferencia',26)">
+        <span style="flex:1">Sobremesas</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('preferencia',27)">
+        <span style="flex:1">Pouco Picante</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('preferencia',28)">
+        <span style="flex:1">Picante</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('preferencia',29)">
+        <span style="flex:1">Outro</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button></div></div></div><div class="blk"><h3>Profissão / formação · 21 ativas
+      <button class="btn gh sm" onclick="addOpcao('profissao')">+ opção</button></h3>
+      <div class="body" style="padding:0"><div class="rows" style="border:0;border-radius:0">
+      <button class="taxrow " onclick="toggleOpcao('profissao',0)">
+        <span style="flex:1">Advogado(a)</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('profissao',1)">
+        <span style="flex:1">Médico(a)</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('profissao',2)">
+        <span style="flex:1">Dentista</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('profissao',3)">
+        <span style="flex:1">Psicólogo(a)</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('profissao',4)">
+        <span style="flex:1">Engenheiro(a)</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('profissao',5)">
+        <span style="flex:1">Empresário(a)</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('profissao',6)">
+        <span style="flex:1">Administrador(a)</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('profissao',7)">
+        <span style="flex:1">Consultor(a)</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('profissao',8)">
+        <span style="flex:1">Executivo(a)</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('profissao',9)">
+        <span style="flex:1">Investidor(a)</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('profissao',10)">
+        <span style="flex:1">Economista</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('profissao',11)">
+        <span style="flex:1">Contador(a)</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('profissao',12)">
+        <span style="flex:1">Jornalista</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('profissao',13)">
+        <span style="flex:1">Designer</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('profissao',14)">
+        <span style="flex:1">Arquiteto(a)</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('profissao',15)">
+        <span style="flex:1">Professor(a)</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('profissao',16)">
+        <span style="flex:1">Pesquisador(a)</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('profissao',17)">
+        <span style="flex:1">Servidor(a) Público(a)</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('profissao',18)">
+        <span style="flex:1">Estudante</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('profissao',19)">
+        <span style="flex:1">Aposentado(a)</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('profissao',20)">
+        <span style="flex:1">Outro</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button></div></div></div><div class="blk"><h3>Restrições alimentares · 70 ativas
+      <button class="btn gh sm" onclick="addOpcao('restricao')">+ opção</button></h3>
+      <div class="body" style="padding:0"><div class="rows" style="border:0;border-radius:0">
+      <button class="taxrow " onclick="toggleOpcao('restricao',0)">
+        <span style="flex:1">Celíaco</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',1)">
+        <span style="flex:1">Sem Glúten</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',2)">
+        <span style="flex:1">Intolerância ao Glúten</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',3)">
+        <span style="flex:1">Sem Lactose</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',4)">
+        <span style="flex:1">Intolerância à Lactose</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',5)">
+        <span style="flex:1">Kosher</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',6)">
+        <span style="flex:1">Halal</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',7)">
+        <span style="flex:1">Vegetariano</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',8)">
+        <span style="flex:1">Vegano</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',9)">
+        <span style="flex:1">Pescetariano</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',10)">
+        <span style="flex:1">Carne Vermelha</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',11)">
+        <span style="flex:1">Carne Bovina</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',12)">
+        <span style="flex:1">Carne Suína</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',13)">
+        <span style="flex:1">Aves</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',14)">
+        <span style="flex:1">Frango</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',15)">
+        <span style="flex:1">Camarão</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',16)">
+        <span style="flex:1">Lagosta</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',17)">
+        <span style="flex:1">Lagostim</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',18)">
+        <span style="flex:1">Siri</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',19)">
+        <span style="flex:1">Caranguejo</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',20)">
+        <span style="flex:1">Crustáceos</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',21)">
+        <span style="flex:1">Moluscos</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',22)">
+        <span style="flex:1">Ostra</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',23)">
+        <span style="flex:1">Ostra Crua</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',24)">
+        <span style="flex:1">Mexilhão</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',25)">
+        <span style="flex:1">Marisco</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',26)">
+        <span style="flex:1">Vieira</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',27)">
+        <span style="flex:1">Lula</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',28)">
+        <span style="flex:1">Polvo</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',29)">
+        <span style="flex:1">Frutos do Mar</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',30)">
+        <span style="flex:1">Peixes</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',31)">
+        <span style="flex:1">Peixes com Escama</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',32)">
+        <span style="flex:1">Peixes com Couro</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',33)">
+        <span style="flex:1">Uni</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',34)">
+        <span style="flex:1">Unagi</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',35)">
+        <span style="flex:1">Enguia</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',36)">
+        <span style="flex:1">Carapau</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',37)">
+        <span style="flex:1">Pargo</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',38)">
+        <span style="flex:1">Ovas</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',39)">
+        <span style="flex:1">Ovo</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',40)">
+        <span style="flex:1">Ovo Cru</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',41)">
+        <span style="flex:1">Maionese</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',42)">
+        <span style="flex:1">Tempurá</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',43)">
+        <span style="flex:1">Foie Gras</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',44)">
+        <span style="flex:1">Trufa</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',45)">
+        <span style="flex:1">Azeite Trufado</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',46)">
+        <span style="flex:1">Katsuobushi</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',47)">
+        <span style="flex:1">Cogumelos</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',48)">
+        <span style="flex:1">Funghi</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',49)">
+        <span style="flex:1">Berinjela</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',50)">
+        <span style="flex:1">Pepino</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',51)">
+        <span style="flex:1">Cebolinha</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',52)">
+        <span style="flex:1">Cebola</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',53)">
+        <span style="flex:1">Alho</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',54)">
+        <span style="flex:1">Repolho</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',55)">
+        <span style="flex:1">Beterraba</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',56)">
+        <span style="flex:1">Pimentão</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',57)">
+        <span style="flex:1">Coentro</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',58)">
+        <span style="flex:1">Wasabi</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',59)">
+        <span style="flex:1">Pimenta</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',60)">
+        <span style="flex:1">Pimenta Preta</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',61)">
+        <span style="flex:1">Banana</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',62)">
+        <span style="flex:1">Mamão</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',63)">
+        <span style="flex:1">Abacaxi</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',64)">
+        <span style="flex:1">Azeitona</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',65)">
+        <span style="flex:1">Açúcar</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',66)">
+        <span style="flex:1">Leite de Coco</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',67)">
+        <span style="flex:1">Picante</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',68)">
+        <span style="flex:1">Muito Apimentado</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('restricao',69)">
+        <span style="flex:1">Outro</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button></div></div></div><div class="blk"><h3>Status do cliente · 7 ativas
+      <button class="btn gh sm" onclick="addOpcao('status_cliente')">+ opção</button></h3>
+      <div class="body" style="padding:0"><div class="rows" style="border:0;border-radius:0">
+      <button class="taxrow " onclick="toggleOpcao('status_cliente',0)">
+        <span style="flex:1">Titular</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('status_cliente',1)">
+        <span style="flex:1">Acompanhante</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('status_cliente',2)">
+        <span style="flex:1">Convidado</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('status_cliente',3)">
+        <span style="flex:1">Influenciador</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('status_cliente',4)">
+        <span style="flex:1">Imprensa</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('status_cliente',5)">
+        <span style="flex:1">Sócio</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button><button class="taxrow " onclick="toggleOpcao('status_cliente',6)">
+        <span style="flex:1">Outro</span>
+        <span class="off" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">ativa</span>
+      </button></div></div></div>
+  <div class="banner info"><span>▲</span><span>Uma opção retirada fica <b>inativa</b>, nunca apagada — senão a ficha de quem foi marcado com ela perderia o sentido.</span></div>
+  <div class="blk"><h3>Este arquivo</h3><div class="body">
+    <p style="margin:0 0 12px;font-size:.92rem;color:var(--ink-2)">Tudo o que você faz aqui fica guardado <b>neste navegador</b>, neste computador — não vai para servidor nenhum e ninguém mais vê. Mexa à vontade: dá para voltar ao estado original quando quiser.</p>
+    <button class="btn gh sm" onclick="confirmarReinicio()">Recomeçar do zero</button>
+  </div></div></section>
+        <section class="tela ficha" id="cliente-CLI-00020"><p style="margin:0 0 14px"><a href="#clientes" style="font-family:var(--mono);font-size:11px;color:var(--ink-3);text-decoration:none">← Clientes</a></p>
+  <div class="spread" style="margin-bottom:16px"><div>
+    <h1 class="t">Ricardo Almeida Prado</h1>
+    <p class="lede">“Cadu” · Titular · top 2 · <span class="mono">CLI-00020</span></p>
+  </div><button class="btn gh sm" onclick="formReserva('CLI-00020')">+ Reserva</button></div>
+
+  <div class="mets">
+    <div class="met"><b class="num">25</b><span>Visitas</span></div>
+    <div class="met"><b class="num">65</b><span>Pessoas<br>atendidas</span></div>
+    <div class="met"><b class="num">R$&nbsp;148.889</b><span>Bruto<br>acumulado</span></div>
+    <div class="met"><b class="num">R$&nbsp;5.956</b><span>Ticket médio<br>por reserva</span></div>
+  </div>
+
+  <div class="blk crit"><h3>Segurança <span style="letter-spacing:0;text-transform:none;font-family:var(--sans);font-size:11px">nada registrado</span></h3>
+    <div class="body"><div class="fields">
+      <div class="fld"><span class="k">Alergias</span><span class="v">
+    <button class="edit blank" onclick="pickChips('CLI-00020','alergias','alergia')">registrar</button></span></div>
+      <div class="fld"><span class="k">Restrições</span><span class="v">
+    <button class="edit blank" onclick="pickChips('CLI-00020','restricoes','restricao')">registrar</button></span></div>
+    </div></div></div>
+
+  <div class="blk"><h3>Identidade</h3><div class="body"><div class="fields">
+    <div class="fld"><span class="k">Nome</span><span class="v">
+    <button class="edit " onclick="editaTexto('CLI-00020','nome','Nome')">Ricardo Almeida Prado</button></span></div>
+    <div class="fld"><span class="k">Como chamar</span><span class="v">
+    <button class="edit " onclick="editaTexto('CLI-00020','apelido','Como chamar')">Cadu</button></span></div>
+    <div class="fld"><span class="k">Status</span><span class="v">
+    <button class="edit " onclick="pickUm('CLI-00020','status_cliente','status_cliente')">Titular</button></span></div>
+    <div class="fld"><span class="k">Telefone</span><span class="v">
+    <button class="edit " onclick="editaTexto('CLI-00020','telefone_e164','Telefone (E.164)')">+5511900000000</button></span></div>
+    <div class="fld"><span class="k">E-mail</span><span class="v">
+    <button class="edit " onclick="editaTexto('CLI-00020','email','E-mail')">cliente@exemplo.com.br</button></span></div>
+    <div class="fld"><span class="k">Aniversário</span><span class="v">
+    <button class="edit blank" onclick="editaData('CLI-00020','aniversario','Aniversário')">registrar</button></span></div>
+  </div></div></div>
+
+  <div class="blk"><h3>À mesa</h3><div class="body"><div class="fields">
+    <div class="fld"><span class="k">Mão dominante</span><span class="v">
+    <button class="edit " onclick="pickUm('CLI-00020','mao_dominante','mao_dominante')">Destro</button></span></div>
+    <div class="fld"><span class="k">Hashi próprio</span><span class="v">
+    <button class="edit " onclick="ciclaBool('CLI-00020','hashi_personalizado')">Sim</button></span></div>
+    <div class="fld"><span class="k">Água</span><span class="v">
+    <button class="edit " onclick="pickUm('CLI-00020','preferencia_agua','preferencia_agua')">ASG</button></span></div>
+    <div class="fld"><span class="k">Marca de água</span><span class="v">
+    <button class="edit blank" onclick="pickUm('CLI-00020','marca_agua','marca_agua')">registrar</button></span></div>
+    <div class="fld"><span class="k">Preferências</span><span class="v">
+    <button class="edit blank" onclick="pickChips('CLI-00020','preferencias','preferencia')">registrar</button></span></div>
+  </div></div></div>
+
+  <div class="blk"><h3>Adega <span class="pill go" style="border:0">traz as próprias</span></h3>
+    <div class="body">
+    <div class="fld"><span class="k">sake</span><span class="v"><div class="chips"><span class="chip">Zaku miyabi jd</span><span class="chip">zaku megumi jg</span><span class="chip">yuki no bosha yamahai</span><span class="chip">drunk whale t</span><span class="chip">koshi no kambai jg</span><span class="chip">niida kimoto</span><span class="chip">niwa jg</span><span class="chip">gassan K</span><span class="chip">koshi no kambai</span><span class="chip">Dassai 45</span><span class="chip">Kubota</span><span class="chip">jozen Mizu no Gotoshi</span></div></span></div><div class="fld"><span class="k">vinho</span><span class="v"><div class="chips"><span class="chip">Bouzeron aligote</span><span class="chip">Cheverny blanc tessier</span><span class="chip">domaine cognettes Muscadet</span><span class="chip">jean clude rateau beune blanc</span><span class="chip">terre de gabbro</span><span class="chip">domaine Bott gey Pinot balc</span><span class="chip">monbazar 2019</span><span class="chip">Winegasm 2011</span><span class="chip">Berthier chenin blanc</span><span class="chip">Alvear 3 miradas</span><span class="chip">Clos Vegeout 2011</span><span class="chip">Monbazar</span></div></span></div><div class="fld"><span class="k">champagne</span><span class="v"><div class="chips"><span class="chip">Pet Nat nouveau Nez</span><span class="chip">Gouffier Cremant B</span><span class="chip">Jerome Arnoux Cremant</span><span class="chip">Ruinart Rosé</span></div></span></div><div class="fld"><span class="k">espumante</span><span class="v"><div class="chips"><span class="chip">Pet Nat nouveau Nez</span></div></span></div><div class="fld"><span class="k">cerveja</span><span class="v"><div class="chips"><span class="chip">illegal social holpe lager</span><span class="chip">illegaal ipa</span><span class="chip">Matcha beer</span><span class="chip">Belgian</span></div></span></div><div class="fld"><span class="k">jerez</span><span class="v"><div class="chips"><span class="chip">romate cream</span><span class="chip">amontillado npu</span></div></span></div><div class="fld"><span class="k">licor</span><span class="v"><div class="chips"><span class="chip">Vinho peverella licoroso</span><span class="chip">yuzushu gassan</span><span class="chip">Berthier chenin blanc</span><span class="chip">Alvear 3 miradas</span><span class="chip">Yuzushu Gifu</span><span class="chip">Umeshu Niida</span><span class="chip">Yuzushu</span><span class="chip">Yuzu Gassan</span><span class="chip">Umeshu</span></div></span></div>
+    <div class="banner warn" style="margin:13px 0 0"><span>▲</span><span><b>Rótulos perdidos na planilha:</b> 16 de sake, 3 de vinho. Vieram truncados como “(+n rótulos)” e precisam ser recuperados no arquivo original.</span></div>
+    </div></div>
+
+  <div class="blk"><h3>História · 25 visitas</h3><div class="body">
+    <div class="tl"><div class="ev">
+      <span class="d">27/08/26</span>
+      <span class="w"><b>Seasonal Omakase – 2026</b>
+        <small>2 pessoas · Balcão · 19:15</small></span>
+      <span class="amt">R$&nbsp;2.645
+        <br><button class="btn gh sm" style="margin-top:4px" onclick="posServico('RSV-03259')">registrar</button></span>
+    </div><div class="ev">
+      <span class="d">14/07/26</span>
+      <span class="w"><b>Seasonal Omakase – 2026</b>
+        <small>2 pessoas · Balcão · 19:15</small></span>
+      <span class="amt">R$&nbsp;4.433<br><span class="muted">bebida R$&nbsp;1.055</span>
+        <br><button class="btn gh sm" style="margin-top:4px" onclick="posServico('RSV-03159')">registrar</button></span>
+    </div><div class="ev">
+      <span class="d">29/04/26</span>
+      <span class="w"><b>Seasonal Omakase – 2026</b>
+        <small>2 pessoas · Balcão · 19:15</small></span>
+      <span class="amt">R$&nbsp;6.141<br><span class="muted">bebida R$&nbsp;2.540</span>
+        <br><button class="btn gh sm" style="margin-top:4px" onclick="posServico('RSV-02981')">registrar</button></span>
+    </div><div class="ev">
+      <span class="d">04/03/26</span>
+      <span class="w"><b>Seasonal Omakase – 2026</b>
+        <small>5 pessoas · Balcão · 19:30</small></span>
+      <span class="amt">R$&nbsp;14.346<br><span class="muted">bebida R$&nbsp;5.475</span>
+        <br><button class="btn gh sm" style="margin-top:4px" onclick="posServico('RSV-02826')">registrar</button></span>
+    </div><div class="ev">
+      <span class="d">26/11/25</span>
+      <span class="w"><b>Seasonal Omakase</b>
+        <small>2 pessoas · Balcão · 19:00</small></span>
+      <span class="amt">R$&nbsp;7.524<br><span class="muted">bebida R$&nbsp;3.840</span>
+        <br><button class="btn gh sm" style="margin-top:4px" onclick="posServico('RSV-02635')">registrar</button></span>
+    </div><div class="ev">
+      <span class="d">12/11/25</span>
+      <span class="w"><b>Tempura Kaiseki Dinner</b>
+        <small>4 pessoas · Balcão · 19:00</small></span>
+      <span class="amt">R$&nbsp;7.584<br><span class="muted">bebida R$&nbsp;1.395</span>
+        <br><button class="btn gh sm" style="margin-top:4px" onclick="posServico('RSV-02595')">registrar</button></span>
+    </div><div class="ev">
+      <span class="d">15/10/25</span>
+      <span class="w"><b>New Craft Sake Pairing Dinner</b>
+        <small>2 pessoas · Balcão · 19:00</small></span>
+      <span class="amt">R$&nbsp;6.400
+        <br><button class="btn gh sm" style="margin-top:4px" onclick="posServico('RSV-02522')">registrar</button></span>
+    </div><div class="ev">
+      <span class="d">10/09/25</span>
+      <span class="w"><b>Seasonal Omakase</b>
+        <small>2 pessoas · Balcão · 19:00</small></span>
+      <span class="amt">R$&nbsp;10.557<br><span class="muted">bebida R$&nbsp;6.380</span>
+        <br><button class="btn gh sm" style="margin-top:4px" onclick="posServico('RSV-02428')">registrar</button></span>
+    </div><div class="ev">
+      <span class="d">05/08/25</span>
+      <span class="w"><b>Seasonal Omakase</b>
+        <small>3 pessoas · Balcão · 19:00</small></span>
+      <span class="amt">R$&nbsp;7.101<br><span class="muted">bebida R$&nbsp;1.975</span>
+        <br><button class="btn gh sm" style="margin-top:4px" onclick="posServico('RSV-02343')">registrar</button></span>
+    </div><div class="ev">
+      <span class="d">16/07/25</span>
+      <span class="w"><b>Seasonal Omakase</b>
+        <small>1 pessoa · Balcão · 19:00</small></span>
+      <span class="amt">R$&nbsp;3.065<br><span class="muted">bebida R$&nbsp;1.265</span>
+        <br><button class="btn gh sm" style="margin-top:4px" onclick="posServico('RSV-02292')">registrar</button></span>
+    </div><div class="ev">
+      <span class="d">27/05/25</span>
+      <span class="w"><b>Seasonal Omakase</b>
+        <small>2 pessoas · Balcão · 19:00</small></span>
+      <span class="amt">R$&nbsp;5.420<br><span class="muted">bebida R$&nbsp;1.913</span>
+        <br><button class="btn gh sm" style="margin-top:4px" onclick="posServico('RSV-02174')">registrar</button></span>
+    </div><div class="ev">
+      <span class="d">30/04/25</span>
+      <span class="w"><b>Seasonal Omakase</b>
+        <small>4 pessoas · Balcão · 19:00</small></span>
+      <span class="amt">R$&nbsp;8.156<br><span class="muted">bebida R$&nbsp;1.892</span>
+        <br><button class="btn gh sm" style="margin-top:4px" onclick="posServico('RSV-02109')">registrar</button></span>
+    </div><div class="ev">
+      <span class="d">26/02/25</span>
+      <span class="w"><b>Experiência não registrada</b>
+        <small>2 pessoas · Balcão · 19:00</small></span>
+      <span class="amt">—
+        <br><button class="btn gh sm" style="margin-top:4px" onclick="posServico('RSV-01979')">registrar</button></span>
+    </div><div class="ev">
+      <span class="d">07/11/24</span>
+      <span class="w"><b>Seasonal Omakase: Verão | Summer</b>
+        <small>2 pessoas · Balcão · 19:00</small></span>
+      <span class="amt">R$&nbsp;5.627<br><span class="muted">bebida R$&nbsp;2.293</span>
+        <br><button class="btn gh sm" style="margin-top:4px" onclick="posServico('RSV-01736')">registrar</button></span>
+    </div><div class="ev">
+      <span class="d">07/06/24</span>
+      <span class="w"><b>Seasonal Omakase: Verão | Summer</b>
+        <small>2 pessoas · Balcão · 19:00</small></span>
+      <span class="amt">R$&nbsp;4.997<br><span class="muted">bebida R$&nbsp;1.845</span>
+        <br><button class="btn gh sm" style="margin-top:4px" onclick="posServico('RSV-01322')">registrar</button></span>
+    </div><div class="ev">
+      <span class="d">28/05/24</span>
+      <span class="w"><b>Seasonal Omakase: Verão | Summer</b>
+        <small>2 pessoas · Balcão · 19:00</small></span>
+      <span class="amt">R$&nbsp;4.639<br><span class="muted">bebida R$&nbsp;1.534</span>
+        <br><button class="btn gh sm" style="margin-top:4px" onclick="posServico('RSV-01287')">registrar</button></span>
+    </div><div class="ev">
+      <span class="d">16/04/24</span>
+      <span class="w"><b>Seasonal Omakase: Verão | Summer</b>
+        <small>4 pessoas · Balcão · 19:00</small></span>
+      <span class="amt">R$&nbsp;8.465<br><span class="muted">bebida R$&nbsp;2.981</span>
+        <br><button class="btn gh sm" style="margin-top:4px" onclick="posServico('RSV-01173')">registrar</button></span>
+    </div><div class="ev">
+      <span class="d">26/03/24</span>
+      <span class="w"><b>Seasonal Omakase: Verão | Summer</b>
+        <small>2 pessoas · Balcão · 19:00</small></span>
+      <span class="amt">R$&nbsp;4.881<br><span class="muted">bebida R$&nbsp;2.054</span>
+        <br><button class="btn gh sm" style="margin-top:4px" onclick="posServico('RSV-01115')">registrar</button></span>
+    </div><div class="ev">
+      <span class="d">01/12/23</span>
+      <span class="w"><b>Experiência não registrada</b>
+        <small>2 pessoas · Balcão · 19:00</small></span>
+      <span class="amt">R$&nbsp;4.580<br><span class="muted">bebida R$&nbsp;1.983</span>
+        <br><button class="btn gh sm" style="margin-top:4px" onclick="posServico('RSV-00898')">registrar</button></span>
+    </div><div class="ev">
+      <span class="d">02/08/23</span>
+      <span class="w"><b>Kanoe : Kanoe¸ Reservation</b>
+        <small>4 pessoas · Balcão · 19:00</small></span>
+      <span class="amt">R$&nbsp;6.755<br><span class="muted">bebida R$&nbsp;1.874</span>
+        <br><button class="btn gh sm" style="margin-top:4px" onclick="posServico('RSV-00601')">registrar</button></span>
+    </div><div class="ev">
+      <span class="d">13/06/23</span>
+      <span class="w"><b>Kanoe : Kanoe¸ Reservation</b>
+        <small>2 pessoas · Balcão · 19:00</small></span>
+      <span class="amt">R$&nbsp;3.866<br><span class="muted">bebida R$&nbsp;862</span>
+        <br><button class="btn gh sm" style="margin-top:4px" onclick="posServico('RSV-00476')">registrar</button></span>
+    </div><div class="ev">
+      <span class="d">02/05/23</span>
+      <span class="w"><b>Kanoe : Kanoe¸ Reservation</b>
+        <small>4 pessoas · Balcão · 19:00</small></span>
+      <span class="amt">R$&nbsp;7.078<br><span class="muted">bebida R$&nbsp;2.155</span>
+        <br><button class="btn gh sm" style="margin-top:4px" onclick="posServico('RSV-00360')">registrar</button></span>
+    </div><div class="ev">
+      <span class="d">29/03/23</span>
+      <span class="w"><b>Kanoe : Kanoe¸ Reservation</b>
+        <small>2 pessoas · Balcão · 19:00</small></span>
+      <span class="amt">R$&nbsp;3.755<br><span class="muted">bebida R$&nbsp;1.265</span>
+        <br><button class="btn gh sm" style="margin-top:4px" onclick="posServico('RSV-00256')">registrar</button></span>
+    </div><div class="ev">
+      <span class="d">31/01/23</span>
+      <span class="w"><b>Kanoe : Kanoe¸ Reservation</b>
+        <small>4 pessoas · Balcão · 19:00</small></span>
+      <span class="amt">R$&nbsp;7.600<br><span class="muted">bebida R$&nbsp;2.609</span>
+        <br><button class="btn gh sm" style="margin-top:4px" onclick="posServico('RSV-00170')">registrar</button></span>
+    </div><div class="ev">
+      <span class="d">11/11/22</span>
+      <span class="w"><b>Kanoe : Kanoe¸ Reservation</b>
+        <small>2 pessoas · Balcão · 19:00 · primeira visita</small></span>
+      <span class="amt">R$&nbsp;3.273<br><span class="muted">bebida R$&nbsp;1.046</span>
+        <br><button class="btn gh sm" style="margin-top:4px" onclick="posServico('RSV-00020')">registrar</button></span>
+    </div></div>
+  </div></div>
+
+  <div class="blk"><h3>Relacionamento</h3><div class="body"><div class="fields">
+    <div class="fld"><span class="k">Cargo</span><span class="v">
+    <button class="edit " onclick="pickChips('CLI-00020','cargo','cargo')"><span class="chips"><span class="chip ">Sócio(a)</span><span class="chip ">CEO</span></span></button></span></div>
+    <div class="fld"><span class="k">Empresa</span><span class="v">
+    <button class="edit " onclick="editaTexto('CLI-00020','empresa','Empresa')">Aurora Participações</button></span></div>
+    <div class="fld"><span class="k">Profissão</span><span class="v">
+    <button class="edit blank" onclick="pickChips('CLI-00020','profissao','profissao')">registrar</button></span></div>
+    <div class="fld"><span class="k">Perfil</span><span class="v">
+    <button class="edit blank" onclick="pickChips('CLI-00020','perfil_interesses','perfil_interesses')">registrar</button></span></div>
+    <div class="fld"><span class="k">Interesses</span><span class="v">
+    <button class="edit " onclick="pickChips('CLI-00020','interesses_gastronomicos','interesse_gastronomico')"><span class="chips"><span class="chip ">Participa de degustações</span></span></button></span></div>
+    <div class="fld"><span class="k">Já foi ao Japão</span><span class="v">
+    <button class="edit blank" onclick="ciclaBool('CLI-00020','ja_foi_ao_japao')">registrar</button></span></div>
+    <div class="fld"><span class="k">Costuma viajar</span><span class="v">
+    <button class="edit blank" onclick="ciclaBool('CLI-00020','habito_viajar')">registrar</button></span></div>
+    <div class="fld"><span class="k">Casado(a)</span><span class="v">
+    <button class="edit blank" onclick="ciclaBool('CLI-00020','casado')">registrar</button></span></div>
+    <div class="fld"><span class="k">Cônjuge</span><span class="v">
+    <button class="edit blank" onclick="editaTexto('CLI-00020','conjuge','Cônjuge / companheiro(a)')">registrar</button></span></div>
+    <div class="fld"><span class="k">Endereço</span><span class="v">
+    <button class="edit " onclick="editaTexto('CLI-00020','endereco','Endereço')">Rua Exemplo, 100 · Jardim Paulista · 01000-000</button></span></div>
+  </div></div></div>
+
+  <div class="blk"><h3>Anotações <button class="btn gh sm" onclick="novaNota('CLI-00020')">+ anotar</button></h3>
+    <div class="body"><p class="muted" style="margin:0;font-size:.9rem">Nenhuma anotação. É aqui que vai o que a equipe percebe na mesa.</p>
+    </div></div>
+  <p style="margin:22px 0 0"><button class="btn dang sm" onclick="removeCliente('CLI-00020')">Excluir cliente</button></p></section>
+        <section class="tela" id="painel">
   <div class="spread" style="margin-bottom:18px"><div>
     <h1 class="t">Painel</h1>
     <p class="lede">10/09/2026 · quinta</p></div>
@@ -274,7 +1413,7 @@ setTimeout(function(){
   <div class="blk"><h3>Precisa de atenção</h3><div class="body">
     <div class="statusrow"><span class="mk" style="color:var(--amber)" aria-hidden="true">▲</span>
     <span class="lb">Reservas aguardando faturamento</span><span class="ct" style="color:var(--amber)">1</span>
-    <button class="btn gh sm" onclick="location.hash='#/agenda'">ver</button></div>
+    <button class="btn gh sm" onclick="location.hash='#agenda'">ver</button></div>
     <div class="statusrow"><span class="mk" style="color:var(--amber)" aria-hidden="true">▲</span>
     <span class="lb">Fichas sem alergia nem restrição registrada</span><span class="ct" style="color:var(--amber)">1 de 1</span>
     </div>
@@ -312,10 +1451,11 @@ setTimeout(function(){
     <p class="muted" style="margin:12px 0 0;font-size:.8rem">Somado das 25 reservas que estão no app.</p>
   </div></div>
 
-  <div class="banner info"><span>▲</span><span>Da planilha veio a ficha completa de <b>um</b> cliente — as outras 2.081 estão no arquivo do SharePoint, que este app não alcança. Os números acima são os do que está aqui dentro, não os da base inteira.</span></div></div>
+  <div class="banner info"><span>▲</span><span>Da planilha veio a ficha completa de <b>um</b> cliente — as outras 2.081 estão no arquivo do SharePoint, que este app não alcança. Os números acima são os do que está aqui dentro, não os da base inteira.</span></div></section>
+      </div>
     </div></main>
   </div>
-  <nav class="tabbar" id="tnav"><a href="#/painel" class="on"><span class="g" aria-hidden="true">◴</span>Painel</a><a href="#/agenda" class=""><span class="g" aria-hidden="true">▤</span>Agenda</a><a href="#/clientes" class=""><span class="g" aria-hidden="true">☰</span>Clientes</a><a href="#/listas" class=""><span class="g" aria-hidden="true">⚙</span>Listas</a></nav>
+  <nav class="tabbar" id="tnav"><a href="#painel" class=""><span class="g" aria-hidden="true">◴</span>Painel</a><a href="#agenda" class=""><span class="g" aria-hidden="true">▤</span>Agenda</a><a href="#clientes" class="on"><span class="g" aria-hidden="true">☰</span>Clientes</a><a href="#listas" class=""><span class="g" aria-hidden="true">⚙</span>Listas</a></nav>
 </div>
 <div id="modal"></div>
 
@@ -324,7 +1464,7 @@ setTimeout(function(){
 const SEMENTE={"clientes":{"CLI-00020":{"codigo_legado":"CLI-00020","nome":"Ricardo Almeida Prado","apelido":"Cadu","status_cliente":"Titular","email":"cliente@exemplo.com.br","telefone_e164":"+5511900000000","genero":"Masculino","endereco":"Rua Exemplo, 100","bairro":"Jardim Paulista","cep":"01000-000","aniversario":null,"mao_dominante":"Destro","hashi_personalizado":true,"alergias":[],"restricoes":[],"preferencias":[],"perfil_interesses":[],"interesses_gastronomicos":["Participa de degustações"],"profissao":[],"cargo":["Sócio(a)","CEO"],"empresa":"Aurora Participações","preferencia_agua":"ASG","marca_agua":null,"ja_foi_ao_japao":null,"habito_viajar":null,"casado":null,"conjuge":null,"filhos":null,"quantos_filhos":null,"bebidas":{"sake":["Zaku miyabi jd","zaku megumi jg","yuki no bosha yamahai","drunk whale t","koshi no kambai jg","niida kimoto","niwa jg","gassan K","koshi no kambai","Dassai 45","Kubota","jozen Mizu no Gotoshi"],"vinho":["Bouzeron aligote","Cheverny blanc tessier","domaine cognettes Muscadet","jean clude rateau beune blanc","terre de gabbro","domaine Bott gey Pinot balc","monbazar 2019","Winegasm 2011","Berthier chenin blanc","Alvear 3 miradas","Clos Vegeout 2011","Monbazar"],"champagne":["Pet Nat nouveau Nez","Gouffier Cremant B","Jerome Arnoux Cremant","Ruinart Rosé"],"espumante":["Pet Nat nouveau Nez"],"cerveja":["illegal social holpe lager","illegaal ipa","Matcha beer","Belgian"],"jerez":["romate cream","amontillado npu"],"licor":["Vinho peverella licoroso","yuzushu gassan","Berthier chenin blanc","Alvear 3 miradas","Yuzushu Gifu","Umeshu Niida","Yuzushu","Yuzu Gassan","Umeshu"]},"traz_proprias_bebidas":true,"rotulos_truncados":{"sake":16,"vinho":3},"ranking":2,"criado_em":"2022-11-11","atualizado_em":"2026-09-03"}},"reservas":{"RSV-00020":{"cliente_id":"CLI-00020","data_reserva":"2022-11-11","horario":"19:00","total_pessoas":2,"tipo_mesa":"Balcão","experiencia":"Kanoe : Kanoe¸ Reservation","ocasioes":[],"acompanhantes":[],"observacoes":null,"feedback":null,"status_reserva":"Realizada","primeira_visita":true,"origem":"Importado FLUXO","valor_reserva":1800,"consumo_bebida":1046,"taxa_servico":426.9,"total_bruto":3272.9,"status_financeiro":"Faturado"},"RSV-00170":{"cliente_id":"CLI-00020","data_reserva":"2023-01-31","horario":"19:00","total_pessoas":4,"tipo_mesa":"Balcão","experiencia":"Kanoe : Kanoe¸ Reservation","ocasioes":[],"acompanhantes":[],"observacoes":null,"feedback":null,"status_reserva":"Realizada","primeira_visita":false,"origem":"Importado FLUXO","valor_reserva":4000,"consumo_bebida":2609,"taxa_servico":991.35,"total_bruto":7600.35,"status_financeiro":"Faturado"},"RSV-00256":{"cliente_id":"CLI-00020","data_reserva":"2023-03-29","horario":"19:00","total_pessoas":2,"tipo_mesa":"Balcão","experiencia":"Kanoe : Kanoe¸ Reservation","ocasioes":[],"acompanhantes":[],"observacoes":null,"feedback":null,"status_reserva":"Realizada","primeira_visita":false,"origem":"Importado FLUXO","valor_reserva":2000,"consumo_bebida":1265,"taxa_servico":489.75,"total_bruto":3754.75,"status_financeiro":"Faturado"},"RSV-00360":{"cliente_id":"CLI-00020","data_reserva":"2023-05-02","horario":"19:00","total_pessoas":4,"tipo_mesa":"Balcão","experiencia":"Kanoe : Kanoe¸ Reservation","ocasioes":[],"acompanhantes":[],"observacoes":null,"feedback":null,"status_reserva":"Realizada","primeira_visita":false,"origem":"Importado FLUXO","valor_reserva":4000,"consumo_bebida":2155,"taxa_servico":923.25,"total_bruto":7078.25,"status_financeiro":"Faturado"},"RSV-00476":{"cliente_id":"CLI-00020","data_reserva":"2023-06-13","horario":"19:00","total_pessoas":2,"tipo_mesa":"Balcão","experiencia":"Kanoe : Kanoe¸ Reservation","ocasioes":[],"acompanhantes":[],"observacoes":null,"feedback":null,"status_reserva":"Realizada","primeira_visita":false,"origem":"Importado FLUXO","valor_reserva":2500,"consumo_bebida":862,"taxa_servico":504.3,"total_bruto":3866.3,"status_financeiro":"Faturado"},"RSV-00601":{"cliente_id":"CLI-00020","data_reserva":"2023-08-02","horario":"19:00","total_pessoas":4,"tipo_mesa":"Balcão","experiencia":"Kanoe : Kanoe¸ Reservation","ocasioes":[],"acompanhantes":[],"observacoes":null,"feedback":null,"status_reserva":"Realizada","primeira_visita":false,"origem":"Importado FLUXO","valor_reserva":4000,"consumo_bebida":1874,"taxa_servico":881.1,"total_bruto":6755.1,"status_financeiro":"Faturado"},"RSV-00898":{"cliente_id":"CLI-00020","data_reserva":"2023-12-01","horario":"19:00","total_pessoas":2,"tipo_mesa":"Balcão","experiencia":null,"ocasioes":[],"acompanhantes":[],"observacoes":null,"feedback":null,"status_reserva":"Realizada","primeira_visita":false,"origem":"Importado FLUXO","valor_reserva":2000,"consumo_bebida":1983,"taxa_servico":597.45,"total_bruto":4580.45,"status_financeiro":"Faturado"},"RSV-01115":{"cliente_id":"CLI-00020","data_reserva":"2024-03-26","horario":"19:00","total_pessoas":2,"tipo_mesa":"Balcão","experiencia":"Seasonal Omakase: Verão | Summer","ocasioes":[],"acompanhantes":[],"observacoes":null,"feedback":null,"status_reserva":"Realizada","primeira_visita":false,"origem":"Importado FLUXO","valor_reserva":2190,"consumo_bebida":2054,"taxa_servico":636.6,"total_bruto":4880.6,"status_financeiro":"Faturado"},"RSV-01173":{"cliente_id":"CLI-00020","data_reserva":"2024-04-16","horario":"19:00","total_pessoas":4,"tipo_mesa":"Balcão","experiencia":"Seasonal Omakase: Verão | Summer","ocasioes":[],"acompanhantes":[],"observacoes":null,"feedback":null,"status_reserva":"Realizada","primeira_visita":false,"origem":"Importado FLUXO","valor_reserva":4380,"consumo_bebida":2981,"taxa_servico":1104.15,"total_bruto":8465.15,"status_financeiro":"Faturado"},"RSV-01287":{"cliente_id":"CLI-00020","data_reserva":"2024-05-28","horario":"19:00","total_pessoas":2,"tipo_mesa":"Balcão","experiencia":"Seasonal Omakase: Verão | Summer","ocasioes":[],"acompanhantes":[],"observacoes":null,"feedback":null,"status_reserva":"Realizada","primeira_visita":false,"origem":"Importado FLUXO","valor_reserva":2500,"consumo_bebida":1534,"taxa_servico":605.1,"total_bruto":4639.1,"status_financeiro":"Faturado"},"RSV-01322":{"cliente_id":"CLI-00020","data_reserva":"2024-06-07","horario":"19:00","total_pessoas":2,"tipo_mesa":"Balcão","experiencia":"Seasonal Omakase: Verão | Summer","ocasioes":[],"acompanhantes":[],"observacoes":null,"feedback":null,"status_reserva":"Realizada","primeira_visita":false,"origem":"Importado FLUXO","valor_reserva":2500,"consumo_bebida":1845,"taxa_servico":651.75,"total_bruto":4996.75,"status_financeiro":"Faturado"},"RSV-01736":{"cliente_id":"CLI-00020","data_reserva":"2024-11-07","horario":"19:00","total_pessoas":2,"tipo_mesa":"Balcão","experiencia":"Seasonal Omakase: Verão | Summer","ocasioes":[],"acompanhantes":[],"observacoes":null,"feedback":null,"status_reserva":"Realizada","primeira_visita":false,"origem":"Importado FLUXO","valor_reserva":2600,"consumo_bebida":2293,"taxa_servico":733.95,"total_bruto":5626.95,"status_financeiro":"Faturado"},"RSV-01979":{"cliente_id":"CLI-00020","data_reserva":"2025-02-26","horario":"19:00","total_pessoas":2,"tipo_mesa":"Balcão","experiencia":null,"ocasioes":[],"acompanhantes":[],"observacoes":null,"feedback":null,"status_reserva":"Realizada","primeira_visita":false,"origem":"Importado FLUXO","valor_reserva":null,"consumo_bebida":null,"taxa_servico":null,"total_bruto":null,"status_financeiro":"Aguardando faturamento"},"RSV-02109":{"cliente_id":"CLI-00020","data_reserva":"2025-04-30","horario":"19:00","total_pessoas":4,"tipo_mesa":"Balcão","experiencia":"Seasonal Omakase","ocasioes":[],"acompanhantes":[],"observacoes":null,"feedback":null,"status_reserva":"Realizada","primeira_visita":false,"origem":"Importado FLUXO","valor_reserva":5200,"consumo_bebida":1892,"taxa_servico":1063.8,"total_bruto":8155.8,"status_financeiro":"Faturado"},"RSV-02174":{"cliente_id":"CLI-00020","data_reserva":"2025-05-27","horario":"19:00","total_pessoas":2,"tipo_mesa":"Balcão","experiencia":"Seasonal Omakase","ocasioes":[],"acompanhantes":[],"observacoes":null,"feedback":null,"status_reserva":"Realizada","primeira_visita":false,"origem":"Importado FLUXO","valor_reserva":2800,"consumo_bebida":1913,"taxa_servico":706.95,"total_bruto":5419.95,"status_financeiro":"Faturado"},"RSV-02292":{"cliente_id":"CLI-00020","data_reserva":"2025-07-16","horario":"19:00","total_pessoas":1,"tipo_mesa":"Balcão","experiencia":"Seasonal Omakase","ocasioes":[],"acompanhantes":[],"observacoes":null,"feedback":null,"status_reserva":"Realizada","primeira_visita":false,"origem":"Importado FLUXO","valor_reserva":1400,"consumo_bebida":1265,"taxa_servico":399.75,"total_bruto":3064.75,"status_financeiro":"Faturado"},"RSV-02343":{"cliente_id":"CLI-00020","data_reserva":"2025-08-05","horario":"19:00","total_pessoas":3,"tipo_mesa":"Balcão","experiencia":"Seasonal Omakase","ocasioes":[],"acompanhantes":[],"observacoes":null,"feedback":null,"status_reserva":"Realizada","primeira_visita":false,"origem":"Importado FLUXO","valor_reserva":4200,"consumo_bebida":1975,"taxa_servico":926.25,"total_bruto":7101.25,"status_financeiro":"Faturado"},"RSV-02428":{"cliente_id":"CLI-00020","data_reserva":"2025-09-10","horario":"19:00","total_pessoas":2,"tipo_mesa":"Balcão","experiencia":"Seasonal Omakase","ocasioes":[],"acompanhantes":[],"observacoes":null,"feedback":null,"status_reserva":"Realizada","primeira_visita":false,"origem":"Importado FLUXO","valor_reserva":2800,"consumo_bebida":6380,"taxa_servico":1377,"total_bruto":10557,"status_financeiro":"Faturado"},"RSV-02522":{"cliente_id":"CLI-00020","data_reserva":"2025-10-15","horario":"19:00","total_pessoas":2,"tipo_mesa":"Balcão","experiencia":"New Craft Sake Pairing Dinner","ocasioes":[],"acompanhantes":[],"observacoes":null,"feedback":null,"status_reserva":"Realizada","primeira_visita":false,"origem":"Importado FLUXO","valor_reserva":6400,"consumo_bebida":null,"taxa_servico":null,"total_bruto":6400,"status_financeiro":"Faturado"},"RSV-02595":{"cliente_id":"CLI-00020","data_reserva":"2025-11-12","horario":"19:00","total_pessoas":4,"tipo_mesa":"Balcão","experiencia":"Tempura Kaiseki Dinner","ocasioes":[],"acompanhantes":[],"observacoes":null,"feedback":null,"status_reserva":"Realizada","primeira_visita":false,"origem":"Importado FLUXO","valor_reserva":5200,"consumo_bebida":1395,"taxa_servico":989.25,"total_bruto":7584.25,"status_financeiro":"Faturado"},"RSV-02635":{"cliente_id":"CLI-00020","data_reserva":"2025-11-26","horario":"19:00","total_pessoas":2,"tipo_mesa":"Balcão","experiencia":"Seasonal Omakase","ocasioes":[],"acompanhantes":[],"observacoes":null,"feedback":null,"status_reserva":"Realizada","primeira_visita":false,"origem":"Importado FLUXO","valor_reserva":2687.89,"consumo_bebida":3840,"taxa_servico":996,"total_bruto":7523.889999999999,"status_financeiro":"Faturado"},"RSV-02826":{"cliente_id":"CLI-00020","data_reserva":"2026-03-04","horario":"19:30","total_pessoas":5,"tipo_mesa":"Balcão","experiencia":"Seasonal Omakase – 2026","ocasioes":[],"acompanhantes":[],"observacoes":null,"feedback":null,"status_reserva":"Realizada","primeira_visita":false,"origem":"Importado FLUXO","valor_reserva":7000,"consumo_bebida":5475,"taxa_servico":1871.25,"total_bruto":14346.25,"status_financeiro":"Faturado"},"RSV-02981":{"cliente_id":"CLI-00020","data_reserva":"2026-04-29","horario":"19:15","total_pessoas":2,"tipo_mesa":"Balcão","experiencia":"Seasonal Omakase – 2026","ocasioes":[],"acompanhantes":[],"observacoes":null,"feedback":null,"status_reserva":"Realizada","primeira_visita":false,"origem":"Importado FLUXO","valor_reserva":2800,"consumo_bebida":2540,"taxa_servico":801,"total_bruto":6141,"status_financeiro":"Faturado"},"RSV-03159":{"cliente_id":"CLI-00020","data_reserva":"2026-07-14","horario":"19:15","total_pessoas":2,"tipo_mesa":"Balcão","experiencia":"Seasonal Omakase – 2026","ocasioes":[],"acompanhantes":["CLI-02151 - Maria Exemplo"],"observacoes":null,"feedback":null,"status_reserva":"Realizada","primeira_visita":false,"origem":"Importado FLUXO","valor_reserva":2800,"consumo_bebida":1055,"taxa_servico":578.25,"total_bruto":4433.25,"status_financeiro":"Faturado"},"RSV-03259":{"cliente_id":"CLI-00020","data_reserva":"2026-08-27","horario":"19:15","total_pessoas":2,"tipo_mesa":"Balcão","experiencia":"Seasonal Omakase – 2026","ocasioes":[],"acompanhantes":[],"observacoes":null,"feedback":null,"status_reserva":"Realizada","primeira_visita":false,"origem":"Importado FLUXO","valor_reserva":2300,"consumo_bebida":null,"taxa_servico":345,"total_bruto":2645,"status_financeiro":"Faturado"}},"tax":{"status_cliente":{"tipo":"status_cliente","label":"Status do cliente","opcoes":[{"valor":"Titular","ativo":true},{"valor":"Acompanhante","ativo":true},{"valor":"Convidado","ativo":true},{"valor":"Influenciador","ativo":true},{"valor":"Imprensa","ativo":true},{"valor":"Sócio","ativo":true},{"valor":"Outro","ativo":true}]},"mao_dominante":{"tipo":"mao_dominante","label":"Mão dominante","opcoes":[{"valor":"Destro","ativo":true},{"valor":"Canhoto","ativo":true},{"valor":"Ambidestro","ativo":true}]},"perfil_interesses":{"tipo":"perfil_interesses","label":"Perfil de interesses","opcoes":[{"valor":"Busca Exclusividade","ativo":true},{"valor":"Explorador Gastronômico","ativo":true},{"valor":"Colecionador de Experiências","ativo":true},{"valor":"Interesse em Harmonizações","ativo":true},{"valor":"Interesse em Cultura Japonesa","ativo":true},{"valor":"Interesse em Ingredientes Raros","ativo":true},{"valor":"Outro","ativo":true}]},"alergia":{"tipo":"alergia","label":"Alergias alimentares","opcoes":[{"valor":"Camarão","ativo":true},{"valor":"Lagosta","ativo":true},{"valor":"Lagostim","ativo":true},{"valor":"Caranguejo","ativo":true},{"valor":"Siri","ativo":true},{"valor":"Crustáceos","ativo":true},{"valor":"Marisco","ativo":true},{"valor":"Moluscos","ativo":true},{"valor":"Polvo","ativo":true},{"valor":"Lula","ativo":true},{"valor":"Frutos do Mar","ativo":true},{"valor":"Peixes","ativo":true},{"valor":"Caviar","ativo":true},{"valor":"Glúten","ativo":true},{"valor":"Lactose","ativo":true},{"valor":"Castanha-do-Pará","ativo":true},{"valor":"Castanhas","ativo":true},{"valor":"Amendoim","ativo":true},{"valor":"Abacaxi","ativo":true},{"valor":"Kiwi","ativo":true},{"valor":"Abacate","ativo":true},{"valor":"Cebola","ativo":true},{"valor":"Coentro","ativo":true},{"valor":"Poejo","ativo":true},{"valor":"Quinoa","ativo":true},{"valor":"Funghi Porcini","ativo":true},{"valor":"Outra","ativo":true},{"valor":"Unagui","ativo":true}]},"restricao":{"tipo":"restricao","label":"Restrições alimentares","opcoes":[{"valor":"Celíaco","ativo":true},{"valor":"Sem Glúten","ativo":true},{"valor":"Intolerância ao Glúten","ativo":true},{"valor":"Sem Lactose","ativo":true},{"valor":"Intolerância à Lactose","ativo":true},{"valor":"Kosher","ativo":true},{"valor":"Halal","ativo":true},{"valor":"Vegetariano","ativo":true},{"valor":"Vegano","ativo":true},{"valor":"Pescetariano","ativo":true},{"valor":"Carne Vermelha","ativo":true},{"valor":"Carne Bovina","ativo":true},{"valor":"Carne Suína","ativo":true},{"valor":"Aves","ativo":true},{"valor":"Frango","ativo":true},{"valor":"Camarão","ativo":true},{"valor":"Lagosta","ativo":true},{"valor":"Lagostim","ativo":true},{"valor":"Siri","ativo":true},{"valor":"Caranguejo","ativo":true},{"valor":"Crustáceos","ativo":true},{"valor":"Moluscos","ativo":true},{"valor":"Ostra","ativo":true},{"valor":"Ostra Crua","ativo":true},{"valor":"Mexilhão","ativo":true},{"valor":"Marisco","ativo":true},{"valor":"Vieira","ativo":true},{"valor":"Lula","ativo":true},{"valor":"Polvo","ativo":true},{"valor":"Frutos do Mar","ativo":true},{"valor":"Peixes","ativo":true},{"valor":"Peixes com Escama","ativo":true},{"valor":"Peixes com Couro","ativo":true},{"valor":"Uni","ativo":true},{"valor":"Unagi","ativo":true},{"valor":"Enguia","ativo":true},{"valor":"Carapau","ativo":true},{"valor":"Pargo","ativo":true},{"valor":"Ovas","ativo":true},{"valor":"Ovo","ativo":true},{"valor":"Ovo Cru","ativo":true},{"valor":"Maionese","ativo":true},{"valor":"Tempurá","ativo":true},{"valor":"Foie Gras","ativo":true},{"valor":"Trufa","ativo":true},{"valor":"Azeite Trufado","ativo":true},{"valor":"Katsuobushi","ativo":true},{"valor":"Cogumelos","ativo":true},{"valor":"Funghi","ativo":true},{"valor":"Berinjela","ativo":true},{"valor":"Pepino","ativo":true},{"valor":"Cebolinha","ativo":true},{"valor":"Cebola","ativo":true},{"valor":"Alho","ativo":true},{"valor":"Repolho","ativo":true},{"valor":"Beterraba","ativo":true},{"valor":"Pimentão","ativo":true},{"valor":"Coentro","ativo":true},{"valor":"Wasabi","ativo":true},{"valor":"Pimenta","ativo":true},{"valor":"Pimenta Preta","ativo":true},{"valor":"Banana","ativo":true},{"valor":"Mamão","ativo":true},{"valor":"Abacaxi","ativo":true},{"valor":"Azeitona","ativo":true},{"valor":"Açúcar","ativo":true},{"valor":"Leite de Coco","ativo":true},{"valor":"Picante","ativo":true},{"valor":"Muito Apimentado","ativo":true},{"valor":"Outro","ativo":true}]},"preferencia":{"tipo":"preferencia","label":"Preferências gastronômicas","opcoes":[{"valor":"Carnes","ativo":true},{"valor":"Wagyu","ativo":true},{"valor":"Carne Bovina","ativo":true},{"valor":"Carne Suína","ativo":true},{"valor":"Aves","ativo":true},{"valor":"Peixes","ativo":true},{"valor":"Frutos do Mar","ativo":true},{"valor":"Crustáceos","ativo":true},{"valor":"Moluscos","ativo":true},{"valor":"Sushi","ativo":true},{"valor":"Sashimi","ativo":true},{"valor":"Tempurá","ativo":true},{"valor":"Arroz","ativo":true},{"valor":"Massas","ativo":true},{"valor":"Cogumelos","ativo":true},{"valor":"Legumes","ativo":true},{"valor":"Verduras","ativo":true},{"valor":"Frutas","ativo":true},{"valor":"Ingredientes Sazonais","ativo":true},{"valor":"Ingredientes Raros","ativo":true},{"valor":"Sabores Suaves","ativo":true},{"valor":"Sabores Intensos","ativo":true},{"valor":"Preparações Cruas","ativo":true},{"valor":"Preparações Grelhadas","ativo":true},{"valor":"Preparações Fritas","ativo":true},{"valor":"Preparações Cozidas","ativo":true},{"valor":"Sobremesas","ativo":true},{"valor":"Pouco Picante","ativo":true},{"valor":"Picante","ativo":true},{"valor":"Outro","ativo":true}]},"profissao":{"tipo":"profissao","label":"Profissão / formação","opcoes":[{"valor":"Advogado(a)","ativo":true},{"valor":"Médico(a)","ativo":true},{"valor":"Dentista","ativo":true},{"valor":"Psicólogo(a)","ativo":true},{"valor":"Engenheiro(a)","ativo":true},{"valor":"Empresário(a)","ativo":true},{"valor":"Administrador(a)","ativo":true},{"valor":"Consultor(a)","ativo":true},{"valor":"Executivo(a)","ativo":true},{"valor":"Investidor(a)","ativo":true},{"valor":"Economista","ativo":true},{"valor":"Contador(a)","ativo":true},{"valor":"Jornalista","ativo":true},{"valor":"Designer","ativo":true},{"valor":"Arquiteto(a)","ativo":true},{"valor":"Professor(a)","ativo":true},{"valor":"Pesquisador(a)","ativo":true},{"valor":"Servidor(a) Público(a)","ativo":true},{"valor":"Estudante","ativo":true},{"valor":"Aposentado(a)","ativo":true},{"valor":"Outro","ativo":true}]},"cargo":{"tipo":"cargo","label":"Cargo / função","opcoes":[{"valor":"CEO","ativo":true},{"valor":"COO","ativo":true},{"valor":"CFO","ativo":true},{"valor":"CRO","ativo":true},{"valor":"CTO","ativo":true},{"valor":"CMO","ativo":true},{"valor":"CIO","ativo":true},{"valor":"Diretor(a)","ativo":true},{"valor":"Diretor(a) Executivo(a)","ativo":true},{"valor":"Diretor(a) Sênior","ativo":true},{"valor":"Gerente","ativo":true},{"valor":"Gerente de Produto","ativo":true},{"valor":"Gerente de Operações","ativo":true},{"valor":"Head","ativo":true},{"valor":"Coordenador(a)","ativo":true},{"valor":"Supervisor(a)","ativo":true},{"valor":"Sócio(a)","ativo":true},{"valor":"Sócio(a)-Fundador(a)","ativo":true},{"valor":"Proprietário(a)","ativo":true},{"valor":"Cofundador(a)","ativo":true},{"valor":"Fundador(a)","ativo":true},{"valor":"Advogado(a) Associado(a)","ativo":true},{"valor":"Advogado(a) Sênior","ativo":true},{"valor":"Promotor(a)","ativo":true},{"valor":"Juiz(a)","ativo":true},{"valor":"Médico(a)","ativo":true},{"valor":"Professor(a)","ativo":true},{"valor":"Pesquisador(a)","ativo":true},{"valor":"Consultor(a)","ativo":true},{"valor":"Artista","ativo":true},{"valor":"Outro","ativo":true}]},"ocasiao":{"tipo":"ocasiao","label":"Ocasiões","opcoes":[{"valor":"Aniversário","ativo":true},{"valor":"Aniversário de relacionamento","ativo":true},{"valor":"Aniversário de casamento","ativo":true},{"valor":"Dia dos Namorados","ativo":true},{"valor":"Noivado","ativo":true},{"valor":"Pedido de casamento","ativo":true},{"valor":"Negócios","ativo":true},{"valor":"Comemoração","ativo":true},{"valor":"Outro","ativo":true}]},"preferencia_agua":{"tipo":"preferencia_agua","label":"Preferência de água","opcoes":[{"valor":"ASG","ativo":true},{"valor":"ACG","ativo":true}]},"marca_agua":{"tipo":"marca_agua","label":"Marca de água","opcoes":[{"valor":"Pellegrino","ativo":true},{"valor":"Perrier","ativo":true},{"valor":"Acqua Panna","ativo":true},{"valor":"Voss","ativo":true},{"valor":"Evian","ativo":true},{"valor":"Fiji","ativo":true},{"valor":"São Lourenço","ativo":true},{"valor":"Outra","ativo":true}]},"interesse_gastronomico":{"tipo":"interesse_gastronomico","label":"Interesses gastronômicos","opcoes":[{"valor":"Colecionador de vinhos","ativo":true},{"valor":"Frequenta omakases","ativo":true},{"valor":"Jantares harmonizados","ativo":true},{"valor":"Participa de degustações","ativo":true},{"valor":"Interesse em Harmonizações","ativo":true},{"valor":"Interesse em Ingredientes Raros","ativo":true},{"valor":"Outro","ativo":true},{"valor":"Primeiro Omakase","ativo":true}]}}};
 
 const TABS=[["painel","Painel","◴"],["agenda","Agenda","▤"],["clientes","Clientes","☰"],["listas","Listas","⚙"]];
-const S={db:null,dbState:"carregando",clientes:{},reservas:{},tax:{},notas:{},rota:location.hash.slice(2)||"painel",busca:"",filtros:[]};
+const S={db:null,dbState:"carregando",clientes:{},reservas:{},tax:{},notas:{},rota:location.hash.slice(1)||"painel",busca:"",filtros:[]};
 const $=(s,r=document)=>r.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const brl=n=>n==null?"—":n.toLocaleString("pt-BR",{style:"currency",currency:"BRL",maximumFractionDigits:0});
@@ -429,11 +1569,11 @@ const temRisco=c=>c&&((c.alergias||[]).length>0||(c.restricoes||[]).length>0);
 const VIEWS={painel:vPainel,agenda:vAgenda,clientes:vClientes,listas:vListas};
 
 /** A ficha fica sob /cliente/<id>, então a aba Clientes segue acesa nela. */
-const abaAtiva=(aba,rota)=>rota===aba||(aba==="clientes"&&rota.startsWith("cliente/"));
+const abaAtiva=(aba,rota)=>rota===aba||(aba==="clientes"&&rota.startsWith("cliente-"));
 
 function navHtml(rota){
   return TABS.map(([chave,rotulo,icone])=>
-    `<a href="#/${chave}" class="${abaAtiva(chave,rota)?"on":""}"><span class="g" aria-hidden="true">${icone}</span>${rotulo}</a>`
+    `<a href="#${chave}" class="${abaAtiva(chave,rota)?"on":""}"><span class="g" aria-hidden="true">${icone}</span>${rotulo}</a>`
   ).join("");
 }
 
@@ -443,7 +1583,7 @@ function pinta(){
   $("#sfoot").innerHTML=S.dbState==="salvo"
     ? "Salvo neste navegador"
     : "<span style='color:var(--amber)'>Só nesta aba</span>";
-  $("#view").innerHTML=rota.startsWith("cliente/")
+  $("#view").innerHTML=rota.startsWith("cliente-")
     ? vFicha(rota.slice(8))
     : (VIEWS[rota]||vPainel)();
 }
@@ -482,13 +1622,13 @@ function cardRes(r){
     (c.alergias||[]).length&&(c.restricoes||[]).length?" · ":""}${
     (c.restricoes||[]).length?"RESTRIÇÃO · "+esc((c.restricoes||[]).join(", ")):""}</span></div>`:"";
   const fin=r.status_financeiro==="Aguardando faturamento"?`<span class="pill wait">a faturar</span>`:"";
-  return `<button class="rescard ${risco?"risk":""}" onclick="irCliente('${esc(r.cliente_id)}')">
+  return `<a class="rescard ${risco?"risk":""}" href="#cliente-${esc(r.cliente_id)}">
     <div class="l1"><span><b>${esc(r.horario||"--:--")}</b> · ${esc(dcurto(r.data_reserva))} · ${esc(r.tipo_mesa||"—")} · ${r.total_pessoas||"?"} ${r.total_pessoas===1?"pessoa":"pessoas"}</span>
     <span class="row" style="gap:5px">${fin}${r.primeira_visita?'<span class="pill new">1ª vez</span>':""}</span></div>
     <p class="nm">${esc(c?c.nome:r.cliente_id)}</p>
     <p class="ex">${c&&c.apelido?"“"+esc(c.apelido)+"” · ":""}${esc(r.experiencia||"Experiência não registrada")}</p>
     ${alerta}${tags.length?`<div class="chips" style="margin-top:9px">${tags.join("")}</div>`:""}
-  </button>`;
+  </a>`;
 }
 
 /* Clientes */
@@ -535,11 +1675,11 @@ function buscar(valor){
 }
 function linhaCliente(c){
   const s=resumo(c.id);
-  return `<button class="rowitem" onclick="irCliente('${esc(c.id)}')">
+  return `<a class="rowitem" href="#cliente-${esc(c.id)}">
     <span class="n">${esc(c.nome)}${temRisco(c)?' <span style="color:var(--urushi)">▲</span>':""}</span>
     <span class="m">${c.apelido?"“"+esc(c.apelido)+"” · ":""}${s.visitas} ${s.visitas===1?"visita":"visitas"}${s.ultima?" · última "+dcurto(s.ultima):""}</span>
     <span class="r"><b>${brl(s.bruto)}</b>${c.ranking?"top "+c.ranking:esc(c.status_cliente||"")}</span>
-  </button>`;
+  </a>`;
 }
 
 /* Ficha */
@@ -558,7 +1698,7 @@ function vFicha(id){
     <button class="edit ${v==null?"blank":""}" onclick="ciclaBool('${id}','${campo}')">${v==null?"registrar":(v?"Sim":"Não")}</button></span></div>`;
   const beb=c.bebidas||{}, cats=Object.keys(beb);
   const trunc=Object.entries(c.rotulos_truncados||{});
-  return `<p style="margin:0 0 14px"><a href="#/clientes" style="font-family:var(--mono);font-size:11px;color:var(--ink-3);text-decoration:none">← Clientes</a></p>
+  return `<p style="margin:0 0 14px"><a href="#clientes" style="font-family:var(--mono);font-size:11px;color:var(--ink-3);text-decoration:none">← Clientes</a></p>
   <div class="spread" style="margin-bottom:16px"><div>
     <h1 class="t">${esc(c.nome)}</h1>
     <p class="lede">${c.apelido?"“"+esc(c.apelido)+"” · ":""}${esc(c.status_cliente||"sem status")}${c.ranking?" · top "+c.ranking:""} · <span class="mono">${esc(c.codigo_legado||c.id)}</span></p>
@@ -687,7 +1827,7 @@ function vPainel(){
   </div></div>
 
   <div class="blk"><h3>Precisa de atenção</h3><div class="body">
-    ${st("▲","var(--amber)","Reservas aguardando faturamento",aFaturar.length,"location.hash='#/agenda'")}
+    ${st("▲","var(--amber)","Reservas aguardando faturamento",aFaturar.length,"location.hash='#agenda'")}
     ${st("▲","var(--amber)","Fichas sem alergia nem restrição registrada",semFicha.length+" de "+cs.length,"")}
     ${st("▲","var(--amber)","Clientes sem vir há mais de 6 meses",sumidos.length,"filtrarPor('sumido')")}
     ${st("●","var(--urushi)","Clientes com alergia ou restrição",risco.length,"filtrarPor('risco')")}
@@ -705,7 +1845,7 @@ function vPainel(){
 
   <div class="banner info"><span>▲</span><span>Da planilha veio a ficha completa de <b>um</b> cliente — as outras 2.081 estão no arquivo do SharePoint, que este app não alcança. Os números acima são os do que está aqui dentro, não os da base inteira.</span></div>`;
 }
-function filtrarPor(chave){S.filtros=[chave];S.busca="";location.hash="#/clientes"}
+function filtrarPor(chave){S.filtros=[chave];S.busca="";location.hash="#clientes"}
 
 /* Listas */
 function vListas(){
@@ -728,7 +1868,7 @@ function vListas(){
 }
 
 /* ── ações ────────────────────────────────────────── */
-function irCliente(id){location.hash="#/cliente/"+id}
+function irCliente(id){location.hash="#cliente-"+id}
 function toggleFiltro(chave){
   S.filtros=S.filtros.includes(chave)?S.filtros.filter(x=>x!==chave):S.filtros.concat([chave]);
   $("#filtros").innerHTML=filtrosHtml();
@@ -869,7 +2009,7 @@ async function salvaReserva(){
     experiencia:$("#r_exp").value.trim()||null,ocasioes:[],acompanhantes:[],
     status_reserva:"Confirmada",primeira_visita:!jaVeio,origem:"App",
     status_financeiro:"Aguardando faturamento",criado_em:hoje()});
-  fecha(); location.hash="#/agenda"}
+  fecha(); location.hash="#agenda"}
 
 /* pós-serviço */
 let POS={};
@@ -923,10 +2063,13 @@ function removeCliente(id){
   <div class="sbody"><p style="margin:0">Isso apaga a ficha de <b>${esc((cliente(id)||{}).nome)}</b>. As reservas continuam no banco.</p></div>
   <footer><button class="btn gh" onclick="fecha()">Cancelar</button>
   <button class="btn dang" onclick="confirmaRemove('${esc(id)}')">Excluir</button></footer>`)}
-async function confirmaRemove(id){await apaga("clientes",id);fecha();location.hash="#/clientes"}
+async function confirmaRemove(id){await apaga("clientes",id);fecha();location.hash="#clientes"}
 
 /* ── boot ─────────────────────────────────────────── */
-window.addEventListener("hashchange",()=>{S.rota=location.hash.slice(2)||"painel";fecha();window.scrollTo(0,0);pinta()});
+window.addEventListener("hashchange",()=>{S.rota=location.hash.slice(1)||"painel";fecha();window.scrollTo(0,0);pinta()});
+// O JavaScript rodou: o modo leitura sai de cena e o app assume.
+document.getElementById("estatico").hidden=true;
+document.getElementById("view").hidden=false;
 pinta();
 conectar();
 window.__carregou=true;
