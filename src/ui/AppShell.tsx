@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { DESTINOS, DESTINOS_BARRA } from './navegacao'
 import { IconeFechar, IconeMenu } from './Icones'
+import { SeletorEspaco } from './SeletorEspaco'
+import { COR_SYNC, ROTULO_SYNC, useSync } from '@/dados/useSync'
 
 /**
  * Casca do app. Duas navegações de propósito, porque servem a dois momentos:
@@ -36,7 +38,10 @@ export function AppShell() {
         >
           <IconeMenu />
         </button>
-        <span className="truncate text-base font-semibold">All Big Chef</span>
+        <SeletorEspaco />
+        <div className="ml-auto">
+          <LuzDoSync />
+        </div>
       </header>
 
       <Gaveta aberta={gavetaAberta} aoFechar={() => setGavetaAberta(false)} />
@@ -48,6 +53,28 @@ export function AppShell() {
 
       <BarraInferior />
     </div>
+  )
+}
+
+/**
+ * Um ponto colorido e nada mais. Estado de sincronia interessa quando algo está
+ * errado; no resto do tempo, não deve disputar atenção com o serviço.
+ */
+function LuzDoSync() {
+  const { estado, pendentes, agora } = useSync()
+  const rotulo = ROTULO_SYNC[estado]
+
+  return (
+    <button
+      type="button"
+      onClick={agora}
+      title={pendentes > 0 ? `${rotulo} (${pendentes} para enviar)` : rotulo}
+      aria-label={rotulo}
+      className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-texto2 hover:bg-painel2"
+    >
+      <span className={`h-2 w-2 rounded-full ${COR_SYNC[estado]}`} />
+      {pendentes > 0 ? <span>{pendentes}</span> : null}
+    </button>
   )
 }
 
