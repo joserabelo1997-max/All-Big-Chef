@@ -85,6 +85,8 @@ export async function cadastrarInsumo(pagina, base, dados) {
   await pagina.goto(`${base}/insumos`, { waitUntil: 'networkidle' })
   await pagina.getByRole('button', { name: 'Novo insumo' }).click()
   await pagina.getByLabel('Nome', { exact: true }).fill(dados.nome)
+  if (dados.categoria) await pagina.getByLabel('Categoria').fill(dados.categoria)
+  if (dados.fornecedor) await pagina.getByLabel('Fornecedor').fill(dados.fornecedor)
   await pagina.getByLabel('Quantidade', { exact: true }).fill(virgula(dados.quantidade))
   await pagina.getByLabel('Unidade de compra').selectOption(dados.unidadeCompra)
   await pagina.getByLabel('Preço dessa quantidade').fill(virgula(dados.preco))
@@ -142,11 +144,13 @@ export async function ajustarItem(pagina, nomeDoItem, quantidade, unidade) {
 export async function montarCozinhaDeExemplo(pagina, base) {
   // Cebola: 1 kg por R$ 5,00, usada em g, fator 1,2 → R$ 0,005 por grama bruto.
   await cadastrarInsumo(pagina, base, {
-    nome: 'Cebola', quantidade: 1, unidadeCompra: 'kg', preco: 5, unidadeUso: 'g', fator: 1.2,
+    nome: 'Cebola', categoria: 'Hortifrúti', fornecedor: 'Feira',
+    quantidade: 1, unidadeCompra: 'kg', preco: 5, unidadeUso: 'g', fator: 1.2,
   })
   // Azeite: 500 ml por R$ 20,00 → R$ 0,04 por ml.
   await cadastrarInsumo(pagina, base, {
-    nome: 'Azeite', quantidade: 500, unidadeCompra: 'ml', preco: 20, unidadeUso: 'ml', fator: 1,
+    nome: 'Azeite', categoria: 'Mercearia', fornecedor: 'Distribuidora',
+    quantidade: 500, unidadeCompra: 'ml', preco: 20, unidadeUso: 'ml', fator: 1,
   })
 
   // Fundo: rende 2000 ml em 10 porções → R$ 3,80 a receita inteira.

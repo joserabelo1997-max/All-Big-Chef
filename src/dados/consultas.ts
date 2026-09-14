@@ -4,12 +4,14 @@ import { db } from './db'
 import { montarContexto } from '@/dominio/arvore'
 import type { Contexto } from '@/dominio/arvore'
 import type {
+  CompraItem,
   Ficha,
   FichaComponente,
   Insumo,
   Menu,
   MenuItem,
   PeriodoCmv,
+  ProducaoItem,
   Servico,
   Uuid,
 } from '@/dominio/tipos'
@@ -159,6 +161,32 @@ export function usePeriodosCmv(espacoId: Uuid | null): PeriodoCmv[] | undefined 
         .sort((a, b) => b.inicio.localeCompare(a.inicio))
     },
     [espacoId],
+    undefined,
+  )
+}
+
+/** Estado do checklist de um serviço, pronto para consulta por ficha. */
+export function useProducaoDoServico(servicoId: Uuid | null): Map<Uuid, ProducaoItem> | undefined {
+  return useLiveQuery(
+    async () => {
+      if (!servicoId) return new Map<Uuid, ProducaoItem>()
+      const itens = await db.producao_itens.where('servico_id').equals(servicoId).toArray()
+      return new Map(itens.filter((i) => !i.apagado_em).map((i) => [i.ficha_id, i]))
+    },
+    [servicoId],
+    undefined,
+  )
+}
+
+/** O que já foi marcado como comprado, por insumo. */
+export function useComprasDaOrigem(origemId: Uuid | null): Map<Uuid, CompraItem> | undefined {
+  return useLiveQuery(
+    async () => {
+      if (!origemId) return new Map<Uuid, CompraItem>()
+      const itens = await db.compra_itens.where('origem_id').equals(origemId).toArray()
+      return new Map(itens.filter((i) => !i.apagado_em).map((i) => [i.insumo_id, i]))
+    },
+    [origemId],
     undefined,
   )
 }

@@ -9,12 +9,15 @@ import type {
   IsoData,
   Menu,
   MenuItem,
+  OrigemCompra,
   PeriodoCmv,
+  ProducaoItem,
   Servico,
   ServicoItem,
   SnapshotNo,
   SnapshotPrato,
   SnapshotServico,
+  StatusProducao,
   TipoFicha,
   Unidade,
   Uuid,
@@ -456,4 +459,114 @@ function congelar(no: NoArvore, ctx: Contexto): SnapshotNo {
   if (ficha && ficha.modo_preparo.length > 0) congelado.modo_preparo = [...ficha.modo_preparo]
   if (no.filhos.length > 0) congelado.filhos = no.filhos.map((f) => congelar(f, ctx))
   return congelado
+}
+
+// ---------------------------------------------------------------------------
+// Produção
+// ---------------------------------------------------------------------------
+
+/**
+ * Avança o estado de uma tarefa. A chave é o par (serviço, ficha): fazer o fundo
+ * é um trabalho só, mesmo que ele entre em três pratos — então marcar feito num
+ * lugar marca em todos, que é como a cozinha funciona.
+ */
+export async function mudarStatusProducao(
+  autor: Autor,
+  servicoId: Uuid,
+  fichaId: Uuid,
+  status: StatusProducao,
+): Promise<void> {
+  const existente = await acharProducao(servicoId, fichaId)
+  if (existente) {
+    await salvar('producao_itens', { ...existente, status, apagado_em: null })
+    return
+  }
+  await salvar('producao_itens', {
+    id: novoId(),
+    dono_id: autor.donoId,
+    espaco_id: autor.espacoId,
+    servico_id: servicoId,
+    ficha_id: fichaId,
+    status,
+    quantidade_ajustada: null,
+    nota: '',
+    atualizado_em: agora(),
+    apagado_em: null,
+  })
+}
+
+export async function anotarProducao(
+  autor: Autor,
+  servicoId: Uuid,
+  fichaId: Uuid,
+  dados: { quantidade_ajustada?: number | null; nota?: string },
+): Promise<void> {
+  const existente = await acharProducao(servicoId, fichaId)
+  const base: ProducaoItem = existente ?? {
+    id: novoId(),
+    dono_id: autor.donoId,
+    espaco_id: autor.espacoId,
+    servico_id: servicoId,
+    ficha_id: fichaId,
+    status: 'a_fazer',
+    quantidade_ajustada: null,
+    nota: '',
+    atualizado_em: agora(),
+    apagado_em: null,
+  }
+  await salvar('producao_itens', { ...base, ...dados, apagado_em: null })
+}
+
+async function acharProducao(servicoId: Uuid, fichaId: Uuid): Promise<ProducaoItem | undefined> {
+  const itens = await db.producao_itens.where('servico_id').equals(servicoId).toArray()
+  return itens.find((i) => i.ficha_id === fichaId && !i.apagado_em)
+}
+
+export const PROXIMO_STATUS: Record<StatusProducao, StatusProducao> = {
+  a_fazer: 'fazendo',
+  fazendo: 'feito',
+  feito: 'a_fazer',
+}
+
+// ---------------------------------------------------------------------------
+// Compras
+// ---------------------------------------------------------------------------
+
+export async function marcarCompra(
+  autor: Autor,
+  origem: { tipo: OrigemCompra; id: Uuid },
+  insumoId: Uuid,
+  comprado: boolean,
+): Promise<void> {
+  const itens = await db.compra_itens.where('origem_id').equals(origem.id).toArray()
+  const existente = itens.find((i) => i.insumo_id === insumoId && !i.apagado_em)
+
+  if (existente) {
+    await salvar('compra_itens', { ...existente, comprado })
+    return
+  }
+  await salvar('compra_itens', {
+    id: novoId(),
+    dono_id: autor.donoId,
+    espaco_id: autor.espacoId,
+    origem_tipo: origem.tipo,
+    origem_id: origem.id,
+    insumo_id: insumoId,
+    comprado,
+    quantidade_ajustada: null,
+    nota: '',
+    atualizado_em: agora(),
+    apagado_em: null,
+  })
+}
+
+export async function limparMarcasDeCompra(origemId: Uuid): Promise<void> {
+  const itens = (await db.compra_itens.where('origem_id').equals(origemId).toArray()).filter(
+    (i) => !i.apagado_em,
+  )
+  if (itens.length === 0) return
+  await salvarVarios(
+    'compra_itens',
+    itens.map((i) => ({ ...i, comprado: false })),
+  )
 }
