@@ -3,7 +3,16 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from './db'
 import { montarContexto } from '@/dominio/arvore'
 import type { Contexto } from '@/dominio/arvore'
-import type { Ficha, FichaComponente, Insumo, Menu, MenuItem, Servico, Uuid } from '@/dominio/tipos'
+import type {
+  Ficha,
+  FichaComponente,
+  Insumo,
+  Menu,
+  MenuItem,
+  PeriodoCmv,
+  Servico,
+  Uuid,
+} from '@/dominio/tipos'
 
 /**
  * Consultas do espelho local. Todas obedecem à mesma regra de escopo: o que é do
@@ -139,4 +148,17 @@ export function useContextoArvore(espacoId: Uuid | null): Contexto | undefined {
     if (!fichas || !componentes || !insumos) return undefined
     return montarContexto(fichas, componentes, insumos)
   }, [fichas, componentes, insumos])
+}
+
+export function usePeriodosCmv(espacoId: Uuid | null): PeriodoCmv[] | undefined {
+  return useLiveQuery(
+    async () => {
+      const todos = await db.periodos_cmv.toArray()
+      return todos
+        .filter((p) => !p.apagado_em && p.espaco_id === espacoId)
+        .sort((a, b) => b.inicio.localeCompare(a.inicio))
+    },
+    [espacoId],
+    undefined,
+  )
 }

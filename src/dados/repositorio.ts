@@ -3,6 +3,7 @@ import type {
   Ficha,
   FichaComponente,
   Insumo,
+  PeriodoCmv,
   TipoFicha,
   Unidade,
   Uuid,
@@ -224,4 +225,54 @@ export function moverNaLista<T>(lista: T[], de: number, para: number): T[] {
   const [item] = copia.splice(de, 1)
   copia.splice(para, 0, item!)
   return copia
+}
+
+// ---------------------------------------------------------------------------
+// Períodos de CMV
+// ---------------------------------------------------------------------------
+
+export function periodoEmBranco(autor: Autor): PeriodoCmv {
+  const hoje = new Date()
+  const primeiro = new Date(hoje.getFullYear(), hoje.getMonth(), 1)
+  const ultimo = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0)
+
+  return {
+    id: novoId(),
+    dono_id: autor.donoId,
+    espaco_id: autor.espacoId,
+    rotulo: primeiro.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }),
+    inicio: emIso(primeiro),
+    fim: emIso(ultimo),
+    estoque_inicial: 0,
+    compras: 0,
+    estoque_final: 0,
+    faturamento: 0,
+    observacao: '',
+    atualizado_em: agora(),
+    apagado_em: null,
+  }
+}
+
+export async function salvarPeriodo(periodo: PeriodoCmv): Promise<PeriodoCmv> {
+  return salvar('periodos_cmv', periodo)
+}
+
+export async function apagarPeriodo(id: Uuid): Promise<void> {
+  await apagar('periodos_cmv', id)
+}
+
+/** Data civil sem fuso: o dia do serviço é um dia, não um instante em UTC. */
+export function emIso(data: Date): string {
+  const mes = String(data.getMonth() + 1).padStart(2, '0')
+  const dia = String(data.getDate()).padStart(2, '0')
+  return `${data.getFullYear()}-${mes}-${dia}`
+}
+
+export function hojeEmIso(): string {
+  return emIso(new Date())
+}
+
+export function formatarDataCurta(iso: string): string {
+  const [ano, mes, dia] = iso.split('-')
+  return `${dia}/${mes}/${ano}`
 }
