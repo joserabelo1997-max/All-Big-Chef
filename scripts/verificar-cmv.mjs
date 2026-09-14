@@ -7,54 +7,11 @@
  *
  *   node scripts/verificar-cmv.mjs [url]
  */
-import { chromium } from 'playwright'
-import { existsSync } from 'node:fs'
+import { abrirApp, criarConferidor, semEspacoDuro } from './apoio.mjs'
 
 const base = process.argv[2] ?? 'http://localhost:4173'
-const chromiumDoAmbiente = '/opt/pw-browsers/chromium'
-
-const SESSAO_FALSA = {
-  access_token: 'token-de-teste',
-  token_type: 'bearer',
-  expires_in: 3600,
-  expires_at: Math.floor(Date.now() / 1000) + 3600,
-  refresh_token: 'refresh-de-teste',
-  user: {
-    id: '00000000-0000-4000-8000-000000000001',
-    aud: 'authenticated',
-    role: 'authenticated',
-    email: 'chef@exemplo.com',
-    app_metadata: {},
-    user_metadata: {},
-    created_at: new Date().toISOString(),
-  },
-}
-
-const falhas = []
-const semEspacoDuro = (t) => t.replace(/ /g, ' ')
-
-function conferir(descricao, condicao, detalhe = '') {
-  if (condicao) console.log(`  ok   ${descricao}`)
-  else {
-    console.log(`  FALHA ${descricao} ${detalhe}`)
-    falhas.push(descricao)
-  }
-}
-
-const navegador = await chromium.launch(
-  existsSync(chromiumDoAmbiente) ? { executablePath: chromiumDoAmbiente } : {},
-)
-const contexto = await navegador.newContext({ viewport: { width: 390, height: 844 }, locale: 'pt-BR' })
-const pagina = await contexto.newPage()
-contexto.on('pageerror', (erro) => falhas.push(`erro de página: ${erro.message}`))
-
-await pagina.goto(base, { waitUntil: 'domcontentloaded' })
-await pagina.evaluate((s) => localStorage.setItem('all-big-chef-sessao', JSON.stringify(s)), SESSAO_FALSA)
-await pagina.reload({ waitUntil: 'networkidle' })
-await pagina.getByText('Onde você cozinha').waitFor({ timeout: 15_000 })
-await pagina.getByLabel('Nome do restaurante').fill('Casa do Chef')
-await pagina.getByRole('button', { name: 'Criar restaurante' }).click()
-await pagina.getByRole('navigation', { name: 'Atalhos' }).waitFor({ timeout: 15_000 })
+const { falhas, conferir, encerrar } = criarConferidor()
+const { navegador, pagina } = await abrirApp(base, { falhas })
 
 await pagina.goto(`${base}/cmv`, { waitUntil: 'networkidle' })
 
@@ -126,9 +83,4 @@ conferir('índice de cocção do arroz dá 2,5', texto.includes('2,5'))
 conferir('reconhece que o alimento ganhou peso', texto.includes('Ganhou'))
 
 await navegador.close()
-
-if (falhas.length > 0) {
-  console.error(`\n${falhas.length} verificação(ões) falharam.`)
-  process.exit(1)
-}
-console.log('\nAs calculadoras da aba de CMV batem com as contas do papel.')
+encerrar('As calculadoras da aba de CMV batem com as contas do papel.')

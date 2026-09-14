@@ -136,10 +136,13 @@ create table if not exists public.servicos (
   nome text not null default '',
   menu_id uuid references public.menus (id) on delete set null,
   observacao text not null default '',
-  -- Cópia congelada do que foi servido naquele dia: nomes, quantidades e modo de
-  -- preparo como estavam ALI. Sem isso, consultar 10 de setembro daqui a um ano
-  -- mostraria a receita de hoje — que é justamente o que não se quer saber.
-  snapshot jsonb,
+  -- O que está montado agora, e ainda dá para mexer: [{ficha_id, porcoes}].
+  itens jsonb not null default '[]'::jsonb,
+  -- Cópias congeladas do que foi servido naquele dia: nomes, quantidades e modo
+  -- de preparo como estavam ALI. Sem isso, consultar 10 de setembro daqui a um
+  -- ano mostraria a receita de hoje — que é justamente o que não se quer saber.
+  -- É uma lista porque cada salvamento acrescenta uma versão.
+  snapshots jsonb not null default '[]'::jsonb,
   atualizado_em timestamptz not null default now(),
   apagado_em timestamptz
 );
@@ -190,6 +193,16 @@ create table if not exists public.periodos_cmv (
   atualizado_em timestamptz not null default now(),
   apagado_em timestamptz
 );
+
+-- ---------------------------------------------------------------------------
+-- Colunas acrescentadas depois
+-- ---------------------------------------------------------------------------
+-- `create table if not exists` não mexe numa tabela que já existe, então quem
+-- rodou uma versão anterior deste arquivo precisa destas linhas para alcançar o
+-- formato atual. Em banco novo elas não fazem nada.
+alter table public.servicos add column if not exists itens jsonb not null default '[]'::jsonb;
+alter table public.servicos add column if not exists snapshots jsonb not null default '[]'::jsonb;
+alter table public.servicos drop column if exists snapshot;
 
 -- ---------------------------------------------------------------------------
 -- Índices, gatilhos e RLS, aplicados igual em todas as tabelas

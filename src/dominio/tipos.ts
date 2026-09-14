@@ -122,22 +122,37 @@ export interface MenuItem extends RegistroBase {
   ordem: number
 }
 
+export interface ServicoItem {
+  ficha_id: Uuid
+  porcoes: number
+}
+
 export interface Servico extends RegistroBase {
   data: IsoData
   nome: string
   menu_id: Uuid | null
   observacao: string
+  /** O que está montado agora, e ainda dá para mexer. */
+  itens: ServicoItem[]
   /**
-   * Cópia congelada do que foi servido: nomes, quantidades e modo de preparo como
-   * estavam NAQUELE dia. Sem isso, consultar 10 de setembro daqui a um ano mostraria
-   * a receita de hoje — que é justamente o que não se quer saber.
+   * Cópias congeladas do que foi servido: nomes, quantidades e modo de preparo
+   * como estavam NAQUELE dia. Sem isso, consultar 10 de setembro daqui a um ano
+   * mostraria a receita de hoje — que é justamente o que não se quer saber.
+   *
+   * É uma lista porque cada salvamento acrescenta uma versão. Trocar a guarnição
+   * às quatro da tarde não apaga o que estava escrito às dez da manhã.
    */
-  snapshot: SnapshotServico | null
+  snapshots: SnapshotServico[]
 }
+
+/** Quantas versões de um mesmo dia vale a pena guardar antes de descartar as mais antigas. */
+export const MAXIMO_DE_VERSOES = 20
 
 export interface SnapshotServico {
   gerado_em: IsoInstante
   versao: number
+  custo_total: number | null
+  observacao: string
   pratos: SnapshotPrato[]
 }
 

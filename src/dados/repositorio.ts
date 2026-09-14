@@ -1,9 +1,20 @@
 import { agora, apagar, db, novoId, salvar, salvarVarios } from './db'
+import { explodirFicha } from '@/dominio/arvore'
+import type { Contexto, NoArvore } from '@/dominio/arvore'
+import { MAXIMO_DE_VERSOES } from '@/dominio/tipos'
 import type {
   Ficha,
   FichaComponente,
   Insumo,
+  IsoData,
+  Menu,
+  MenuItem,
   PeriodoCmv,
+  Servico,
+  ServicoItem,
+  SnapshotNo,
+  SnapshotPrato,
+  SnapshotServico,
   TipoFicha,
   Unidade,
   Uuid,
@@ -275,4 +286,174 @@ export function hojeEmIso(): string {
 export function formatarDataCurta(iso: string): string {
   const [ano, mes, dia] = iso.split('-')
   return `${dia}/${mes}/${ano}`
+}
+
+// ---------------------------------------------------------------------------
+// Menus
+// ---------------------------------------------------------------------------
+
+export function menuEmBranco(autor: Autor): Menu {
+  return {
+    id: novoId(),
+    dono_id: autor.donoId,
+    espaco_id: autor.espacoId,
+    nome: '',
+    descricao: '',
+    atualizado_em: agora(),
+    apagado_em: null,
+  }
+}
+
+export async function salvarMenu(menu: Menu): Promise<Menu> {
+  return salvar('menus', { ...menu, nome: menu.nome.trim() })
+}
+
+export async function apagarMenu(id: Uuid): Promise<void> {
+  const itens = (await db.menu_itens.where('menu_id').equals(id).toArray()).filter(
+    (i) => !i.apagado_em,
+  )
+  if (itens.length > 0) {
+    await salvarVarios(
+      'menu_itens',
+      itens.map((i) => ({ ...i, apagado_em: agora() })),
+    )
+  }
+  await apagar('menus', id)
+}
+
+export async function adicionarAoMenu(menu: Menu, fichaId: Uuid, porcoes: number): Promise<void> {
+  const existentes = (await db.menu_itens.where('menu_id').equals(menu.id).toArray()).filter(
+    (i) => !i.apagado_em,
+  )
+  const item: MenuItem = {
+    id: novoId(),
+    dono_id: menu.dono_id,
+    espaco_id: menu.espaco_id,
+    menu_id: menu.id,
+    ficha_id: fichaId,
+    porcoes_previstas: porcoes,
+    ordem: existentes.length,
+    atualizado_em: agora(),
+    apagado_em: null,
+  }
+  await salvar('menu_itens', item)
+}
+
+export async function salvarItemDoMenu(item: MenuItem): Promise<void> {
+  await salvar('menu_itens', item)
+}
+
+export async function apagarItemDoMenu(id: Uuid): Promise<void> {
+  await apagar('menu_itens', id)
+}
+
+// ---------------------------------------------------------------------------
+// Serviços
+// ---------------------------------------------------------------------------
+
+export async function abrirServico(
+  autor: Autor,
+  dados: { data: IsoData; nome: string; menuId: Uuid | null },
+): Promise<Servico> {
+  // Abrir o dia a partir de um menu copia os pratos para dentro do serviço. A
+  // partir daí eles são do dia, não do menu: trocar a guarnição hoje não pode
+  // reescrever o menu padrão da casa.
+  let itens: ServicoItem[] = []
+  if (dados.menuId) {
+    const doMenu = (await db.menu_itens.where('menu_id').equals(dados.menuId).toArray())
+      .filter((i) => !i.apagado_em)
+      .sort((a, b) => a.ordem - b.ordem)
+    itens = doMenu.map((i) => ({ ficha_id: i.ficha_id, porcoes: i.porcoes_previstas }))
+  }
+
+  const servico: Servico = {
+    id: novoId(),
+    dono_id: autor.donoId,
+    espaco_id: autor.espacoId,
+    data: dados.data,
+    nome: dados.nome.trim(),
+    menu_id: dados.menuId,
+    observacao: '',
+    itens,
+    snapshots: [],
+    atualizado_em: agora(),
+    apagado_em: null,
+  }
+  return salvar('servicos', servico)
+}
+
+export async function salvarServico(servico: Servico): Promise<Servico> {
+  return salvar('servicos', servico)
+}
+
+export async function apagarServico(id: Uuid): Promise<void> {
+  const itens = (await db.producao_itens.where('servico_id').equals(id).toArray()).filter(
+    (i) => !i.apagado_em,
+  )
+  if (itens.length > 0) {
+    await salvarVarios(
+      'producao_itens',
+      itens.map((i) => ({ ...i, apagado_em: agora() })),
+    )
+  }
+  await apagar('servicos', id)
+}
+
+/**
+ * Congela o serviço como ele está agora e acrescenta essa versão ao histórico.
+ *
+ * A cópia é denormalizada de propósito: guarda nome, quantidade e modo de preparo
+ * escritos por extenso, e não ids. Daqui a um ano a receita terá mudado, o insumo
+ * pode ter sido apagado — e a pergunta "o que eu servi naquele dia" continua tendo
+ * resposta porque a resposta não depende de nada que ainda exista.
+ */
+export async function registrarNoHistorico(
+  servico: Servico,
+  ctx: Contexto,
+  observacao = '',
+): Promise<Servico> {
+  const pratos: SnapshotPrato[] = []
+  let custoTotal: number | null = 0
+
+  for (const item of servico.itens) {
+    const ficha = ctx.fichas.get(item.ficha_id)
+    if (!ficha) continue
+
+    const { raiz } = explodirFicha(ctx, item.ficha_id, { porcoes: item.porcoes })
+    pratos.push({
+      ficha_id: ficha.id,
+      nome: ficha.nome,
+      porcoes: item.porcoes,
+      custo_total: raiz.custo,
+      arvore: raiz.filhos.map((filho) => congelar(filho, ctx)),
+    })
+
+    custoTotal = raiz.custo === null || custoTotal === null ? null : custoTotal + raiz.custo
+  }
+
+  const versaoAnterior = servico.snapshots[servico.snapshots.length - 1]?.versao ?? 0
+  const nova: SnapshotServico = {
+    gerado_em: agora(),
+    versao: versaoAnterior + 1,
+    custo_total: custoTotal,
+    observacao,
+    pratos,
+  }
+
+  const historico = [...servico.snapshots, nova].slice(-MAXIMO_DE_VERSOES)
+  return salvar('servicos', { ...servico, snapshots: historico })
+}
+
+function congelar(no: NoArvore, ctx: Contexto): SnapshotNo {
+  const ficha = no.tipo === 'ficha' ? ctx.fichas.get(no.refId) : undefined
+  const congelado: SnapshotNo = {
+    tipo: no.tipo,
+    ref_id: no.refId,
+    nome: no.nome,
+    quantidade: no.quantidade,
+    unidade: no.unidade,
+  }
+  if (ficha && ficha.modo_preparo.length > 0) congelado.modo_preparo = [...ficha.modo_preparo]
+  if (no.filhos.length > 0) congelado.filhos = no.filhos.map((f) => congelar(f, ctx))
+  return congelado
 }

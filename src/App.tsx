@@ -13,6 +13,7 @@ import Insumos from '@/telas/Insumos'
 import Producao from '@/telas/Producao'
 import Menus from '@/telas/Menus'
 import Servicos from '@/telas/Servicos'
+import EditorServico from '@/telas/EditorServico'
 import Compras from '@/telas/Compras'
 import Config from '@/telas/Config'
 
@@ -47,6 +48,7 @@ export default function App() {
               <Route path="producao" element={<Producao />} />
               <Route path="menus" element={<Menus />} />
               <Route path="servicos" element={<Servicos />} />
+              <Route path="servicos/:id" element={<EditorServico />} />
               <Route path="compras" element={<Compras />} />
               <Route path="config" element={<Config />} />
             </Route>
