@@ -1,5 +1,8 @@
+import { useMemo } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from './db'
+import { montarContexto } from '@/dominio/arvore'
+import type { Contexto } from '@/dominio/arvore'
 import type { Ficha, FichaComponente, Insumo, Menu, MenuItem, Servico, Uuid } from '@/dominio/tipos'
 
 /**
@@ -119,4 +122,21 @@ export function useServico(servicoId: Uuid | null): Servico | undefined | null {
     [servicoId],
     undefined,
   )
+}
+
+/**
+ * O contexto que a árvore precisa, montado uma vez e compartilhado. Vale carregar
+ * tudo: um cozinheiro tem dezenas ou poucas centenas de fichas, e ter o conjunto
+ * inteiro na memória deixa qualquer custo ser recalculado na hora, sem ida ao
+ * banco a cada tecla digitada.
+ */
+export function useContextoArvore(espacoId: Uuid | null): Contexto | undefined {
+  const fichas = useFichas(espacoId)
+  const componentes = useComponentes(espacoId)
+  const insumos = useInsumos(espacoId)
+
+  return useMemo(() => {
+    if (!fichas || !componentes || !insumos) return undefined
+    return montarContexto(fichas, componentes, insumos)
+  }, [fichas, componentes, insumos])
 }

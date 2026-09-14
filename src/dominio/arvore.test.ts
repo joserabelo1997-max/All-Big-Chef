@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { explodirFicha, fichasDaArvore, montarContexto, percorrer } from './arvore'
+import { criariaCiclo, explodirFicha, fichasDaArvore, montarContexto, percorrer } from './arvore'
 import { comFicha, comInsumo, ficha, insumo } from './testes/fabricas'
 import { cozinhaDeTeste } from './testes/cozinha'
 import type { NoArvore } from './arvore'
@@ -138,5 +138,35 @@ describe('fichasDaArvore', () => {
   it('lista prato e preparos, que são o que vira tarefa, e ignora insumos', () => {
     const { raiz } = explodirFicha(cozinhaDeTeste().ctx, 'sopa')
     expect(fichasDaArvore(raiz).map((f) => f.nome)).toEqual(['Sopa do dia', 'Fundo de legumes'])
+  })
+})
+
+describe('criariaCiclo', () => {
+  it('barra a ficha dentro de si mesma', () => {
+    const { ctx } = cozinhaDeTeste()
+    expect(criariaCiclo(ctx, 'sopa', 'sopa')).toBe(true)
+  })
+
+  it('barra o prato que já está dentro do preparo candidato', () => {
+    const { ctx } = cozinhaDeTeste()
+    // A sopa já usa o fundo. Pôr a sopa dentro do fundo fecharia o laço.
+    expect(criariaCiclo(ctx, 'fundo', 'sopa')).toBe(true)
+  })
+
+  it('libera o que não fecha laço', () => {
+    const { ctx } = cozinhaDeTeste()
+    expect(criariaCiclo(ctx, 'sopa', 'fundo')).toBe(false)
+    expect(criariaCiclo(ctx, 'salada', 'fundo')).toBe(false)
+  })
+
+  it('enxerga o laço indireto, a dois níveis de distância', () => {
+    const ctx = montarContexto(
+      [ficha('a', 'preparo'), ficha('b', 'preparo'), ficha('c', 'preparo')],
+      [comFicha('a', 'b', 100, 'g'), comFicha('b', 'c', 100, 'g')],
+      [],
+    )
+    // Pôr `a` dentro de `c` fecharia a → b → c → a.
+    expect(criariaCiclo(ctx, 'c', 'a')).toBe(true)
+    expect(criariaCiclo(ctx, 'a', 'c')).toBe(false)
   })
 })

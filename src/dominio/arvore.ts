@@ -275,3 +275,31 @@ export function montarContexto(
     insumos: new Map(insumos.filter((i) => !i.apagado_em).map((i) => [i.id, i])),
   }
 }
+
+/**
+ * Se eu puser `candidataId` dentro de `fichaId`, isso cria um laço?
+ *
+ * Cria se a candidata for a própria ficha, ou se a ficha já estiver em algum lugar
+ * dentro da candidata. Vale perguntar ANTES de deixar escolher: barrar na hora de
+ * montar a receita é muito melhor que descobrir depois, com um aviso no custo.
+ */
+export function criariaCiclo(ctx: Contexto, fichaId: Uuid, candidataId: Uuid): boolean {
+  if (fichaId === candidataId) return true
+
+  const vistas = new Set<Uuid>()
+  const pilha: Uuid[] = [candidataId]
+
+  while (pilha.length > 0) {
+    const atual = pilha.pop()!
+    if (atual === fichaId) return true
+    if (vistas.has(atual)) continue
+    vistas.add(atual)
+
+    for (const componente of ctx.componentesPorFicha.get(atual) ?? []) {
+      if (componente.apagado_em) continue
+      if (componente.ficha_filha_id) pilha.push(componente.ficha_filha_id)
+    }
+  }
+
+  return false
+}

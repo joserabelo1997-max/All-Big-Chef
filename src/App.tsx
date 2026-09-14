@@ -8,6 +8,7 @@ import Entrar from '@/telas/Entrar'
 import Inicio from '@/telas/Inicio'
 import Cmv from '@/telas/Cmv'
 import Receitas from '@/telas/Receitas'
+import EditorFicha from '@/telas/EditorFicha'
 import Insumos from '@/telas/Insumos'
 import Producao from '@/telas/Producao'
 import Menus from '@/telas/Menus'
@@ -41,6 +42,7 @@ export default function App() {
               <Route index element={<Inicio />} />
               <Route path="cmv" element={<Cmv />} />
               <Route path="receitas" element={<Receitas />} />
+              <Route path="receitas/:id" element={<EditorFicha />} />
               <Route path="insumos" element={<Insumos />} />
               <Route path="producao" element={<Producao />} />
               <Route path="menus" element={<Menus />} />
