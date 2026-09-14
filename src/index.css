@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    color-scheme: dark;
+    /* Sem zoom acidental ao tocar duas vezes com a mão molhada. */
+    touch-action: manipulation;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-fundo text-texto font-sans antialiased;
+    /* Respeita o notch e a barra de gestos do iPhone. */
+    padding-top: env(safe-area-inset-top);
+  }
+
+  /* Campo de texto com menos de 16px faz o iOS dar zoom sozinho. */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+@layer components {
+  .cartao {
+    @apply rounded-2xl border border-borda bg-painel p-4;
+  }
+
+  .campo {
+    @apply w-full rounded-xl border border-borda bg-painel2 px-3 py-2.5 text-texto
+           placeholder:text-texto2/60 outline-none focus:border-brasa/70;
+  }
+
+  .rotulo {
+    @apply mb-1.5 block text-sm font-medium text-texto2;
+  }
+
+  .botao {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5
+           font-medium transition active:scale-[0.98] disabled:opacity-40;
+  }
+
+  .botao-principal {
+    @apply botao bg-brasa text-fundo hover:bg-brasa2;
+  }
+
+  .botao-secundario {
+    @apply botao border border-borda bg-painel2 text-texto hover:border-brasa/50;
+  }
+
+  .botao-fantasma {
+    @apply botao text-texto2 hover:text-texto;
+  }
+}
